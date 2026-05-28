@@ -150,9 +150,66 @@ function bindEventListeners() {
     });
   });
 
-  // ESC 关闭 Modal
+  // 全局键盘快捷键
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') closeModal();
+    // 输入框中不触发快捷键
+    const tag = document.activeElement?.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') {
+      if (e.key === 'Escape') closeModal();
+      return;
+    }
+
+    switch (e.key) {
+      case 'Escape':
+        closeModal();
+        break;
+      case ' ':  // 空格 = 麦克风开关
+        e.preventDefault();
+        handleMicClick();
+        break;
+      case 'n':
+      case 'N':
+        e.preventDefault();
+        openAddEventModal();
+        break;
+      case 'm':
+        changeView('dayGridMonth');
+        document.querySelectorAll('.btn-view').forEach(b => b.classList.remove('active'));
+        document.querySelector('[data-view="dayGridMonth"]')?.classList.add('active');
+        updateCalendarTitle();
+        break;
+      case 'w':
+        changeView('timeGridWeek');
+        document.querySelectorAll('.btn-view').forEach(b => b.classList.remove('active'));
+        document.querySelector('[data-view="timeGridWeek"]')?.classList.add('active');
+        updateCalendarTitle();
+        break;
+      case 'd':
+        changeView('timeGridDay');
+        document.querySelectorAll('.btn-view').forEach(b => b.classList.remove('active'));
+        document.querySelector('[data-view="timeGridDay"]')?.classList.add('active');
+        updateCalendarTitle();
+        break;
+      case 't':
+        goToToday();
+        updateCalendarTitle();
+        break;
+      case 'k':
+        toggleTheme();
+        break;
+      case 'ArrowLeft':
+        if (!e.ctrlKey && !e.metaKey) {
+          goPrev();
+          updateCalendarTitle();
+        }
+        break;
+      case 'ArrowRight':
+        if (!e.ctrlKey && !e.metaKey) {
+          goNext();
+          updateCalendarTitle();
+        }
+        break;
+    }
   });
 }
 
