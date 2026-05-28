@@ -229,6 +229,7 @@ body {
 #main-content {
   display: flex;
   flex: 1;
+  height: calc(100vh - var(--header-height));
   overflow: hidden;
 }
 
@@ -236,6 +237,7 @@ body {
   flex: 1;
   padding: var(--space-6);
   overflow-y: auto;
+  min-width: 0;
 }
 
 /* ---------- Sidebar ---------- */
@@ -250,8 +252,6 @@ body {
   overflow-y: auto;
   flex-shrink: 0;
   height: calc(100vh - var(--header-height));
-  position: sticky;
-  top: var(--header-height);
 }
 
 .sidebar-card {
@@ -860,27 +860,130 @@ body {
 }
 
 /* ---------- Responsive ---------- */
-@media (max-width: 900px) {
+
+/* 2K+ (2560px) */
+@media (min-width: 2560px) {
+  :root {
+    --text-xs: 0.875rem;
+    --text-sm: 1rem;
+    --text-base: 1.125rem;
+    --text-lg: 1.375rem;
+    --text-xl: 1.75rem;
+    --text-2xl: 2.25rem;
+    --header-height: 76px;
+    --sidebar-width: 420px;
+  }
+
+  #app-header {
+    padding: 0 var(--space-8);
+  }
+
+  #calendar-section {
+    padding: var(--space-8);
+  }
+
+  .btn-mic {
+    width: 80px;
+    height: 80px;
+  }
+
+  .btn-mic svg {
+    width: 40px;
+    height: 40px;
+  }
+
+  .mic-container {
+    height: 104px;
+  }
+
+  .modal {
+    width: 520px;
+    padding: var(--space-10);
+  }
+}
+
+/* 1K ~ 1366px */
+@media (max-width: 1366px) {
+  :root {
+    --sidebar-width: 300px;
+  }
+
+  .logo-subtitle {
+    display: none;
+  }
+
+  .calendar-title {
+    font-size: var(--text-base);
+    min-width: 80px;
+  }
+}
+
+/* Tablet (≤1024px) */
+@media (max-width: 1024px) {
+  :root {
+    --sidebar-width: 280px;
+  }
+
+  #app-header {
+    padding: 0 var(--space-4);
+  }
+
+  .header-center {
+    gap: var(--space-1);
+  }
+
+  .calendar-title {
+    display: none;
+  }
+
+  .btn-icon-only {
+    width: 28px;
+    height: 28px;
+  }
+
+  .mic-container {
+    height: 72px;
+    margin: var(--space-4) 0;
+  }
+
+  .btn-mic {
+    width: 52px;
+    height: 52px;
+  }
+
+  .btn-mic svg {
+    width: 26px;
+    height: 26px;
+  }
+
+  .chip {
+    font-size: 0.6875rem;
+  }
+}
+
+/* Mobile landscape / small tablet (≤768px) */
+@media (max-width: 768px) {
   #main-content {
     flex-direction: column;
+    height: auto;
+    overflow: visible;
+  }
+
+  #calendar-section {
+    padding: var(--space-4);
+    overflow-y: visible;
+    min-height: 400px;
   }
 
   #sidebar {
     width: 100%;
     height: auto;
-    position: static;
     border-left: none;
     border-top: 1px solid var(--color-border);
-    flex-direction: row;
-    flex-wrap: wrap;
+    padding: var(--space-4);
   }
 
   .sidebar-card {
-    flex: 1;
-    min-width: 280px;
-  }
-
-  #calendar-section {
     padding: var(--space-4);
   }
 
@@ -891,23 +994,107 @@ body {
   .logo-subtitle {
     display: none;
   }
-}
 
-@media (max-width: 600px) {
-  #app-header {
-    padding: 0 var(--space-3);
-  }
-
-  .view-switcher {
-    display: none;
+  #btn-add-manual {
+    padding: var(--space-2);
   }
 
   #btn-add-manual .btn-icon + span {
     display: none;
   }
+}
+
+/* Mobile portrait (≤480px) */
+@media (max-width: 480px) {
+  :root {
+    --header-height: 52px;
+  }
+
+  #app-header {
+    padding: 0 var(--space-3);
+  }
+
+  .logo-text {
+    font-size: var(--text-base);
+  }
+
+  .logo-icon {
+    font-size: 1.1rem;
+  }
+
+  .header-center {
+    gap: 2px;
+  }
+
+  .btn-ghost {
+    padding: var(--space-1) var(--space-2);
+    font-size: var(--text-xs);
+  }
+
+  .view-switcher {
+    padding: 2px;
+  }
+
+  .btn-view {
+    padding: 2px var(--space-2);
+    font-size: var(--text-xs);
+  }
+
+  #calendar-section {
+    padding: var(--space-2);
+  }
+
+  .fc .fc-col-header-cell {
+    font-size: var(--text-xs);
+    padding: var(--space-1) 0;
+  }
+
+  .fc .fc-daygrid-day-number {
+    font-size: 0.625rem;
+    padding: 1px 4px;
+  }
+
+  .mic-container {
+    height: 64px;
+    margin: var(--space-3) 0;
+  }
+
+  .btn-mic {
+    width: 48px;
+    height: 48px;
+  }
+
+  .btn-mic svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  .example-chips {
+    gap: var(--space-1);
+  }
+
+  .chip {
+    font-size: 0.625rem;
+    padding: 2px var(--space-2);
+  }
 
   .modal {
-    padding: var(--space-5);
-    margin: var(--space-4);
+    padding: var(--space-4);
+    margin: var(--space-3);
+    width: calc(100vw - var(--space-6));
+  }
+
+  .form-row {
+    flex-direction: column;
+  }
+
+  #toast-container {
+    left: var(--space-3);
+    right: var(--space-3);
+    bottom: var(--space-3);
+  }
+
+  .toast {
+    max-width: 100%;
   }
 }
