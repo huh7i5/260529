@@ -427,8 +427,22 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: var(--space-6) 0;
-  height: 88px;
+  margin: var(--space-4) 0;
+  height: 160px;
+  width: 160px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.mic-visualizer {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 160px;
+  height: 160px;
+  pointer-events: none;
+  z-index: 1;
 }
 
 .btn-mic {

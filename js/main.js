@@ -11,6 +11,7 @@ import { parseVoiceCommand } from './nlp.js';
 import speechManager from './speech.js';
 import { initReminder, setGetEventsCallback } from './reminder.js';
 import { exportToICS } from './export.js';
+import { initVisualizer, startVisualization, stopVisualization } from './visualizer.js';
 import {
   showToast,
   openAddEventModal,
@@ -31,9 +32,12 @@ async function init() {
 
   // 1. 初始化数据库
   await initDB();
-  console.log('✅ 数据库就绪');
+  console.log('✅ 存储就绪');
 
-  // 2. 初始化日历
+  // 2. 初始化可视化器
+  initVisualizer();
+
+  // 3. 初始化日历
   const calendarEl = document.getElementById('calendar');
   initCalendar(calendarEl, {
     onDateClick: (date) => {
@@ -247,6 +251,7 @@ async function handleMicClick() {
     isListening = false;
     setMicState('idle');
     hideTranscript();
+    stopVisualization();
     return;
   }
 
@@ -254,9 +259,11 @@ async function handleMicClick() {
     isListening = true;
     setMicState('listening');
     hideVoiceFeedback();
+    startVisualization();
 
     const transcript = await speechManager.startListening();
     isListening = false;
+    stopVisualization();
 
     if (transcript) {
       showTranscript(transcript, true);
@@ -269,6 +276,7 @@ async function handleMicClick() {
     isListening = false;
     setMicState('idle');
     hideTranscript();
+    stopVisualization();
 
     if (error.message !== '没有检测到语音输入，请重试') {
       showVoiceFeedback(error.message || '语音识别失败', true);
