@@ -16,13 +16,18 @@
     <header id="app-header">
       <div class="header-left">
         <h1 class="logo">
-          <span class="logo-icon">🗓️</span>
+          <span class="logo-icon">📅</span>
           <span class="logo-text">VoiCal</span>
         </h1>
         <span class="logo-subtitle">语音日历工具</span>
       </div>
-      <div class="header-right">
+      <div class="header-center">
+        <button id="btn-prev" class="btn btn-icon-only" title="上一页">❮</button>
         <button id="btn-today" class="btn btn-ghost">今天</button>
+        <button id="btn-next" class="btn btn-icon-only" title="下一页">❯</button>
+        <span id="calendar-title" class="calendar-title"></span>
+      </div>
+      <div class="header-right">
         <div class="view-switcher">
           <button class="btn btn-view active" data-view="dayGridMonth">月</button>
           <button class="btn btn-view" data-view="timeGridWeek">周</button>

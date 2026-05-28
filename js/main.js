@@ -5,7 +5,7 @@
  * 本项目借助 Antigravity (Google DeepMind) 开发
  */
 
-import { initCalendar, addCalendarEvent, removeCalendarEvent, loadEvents, changeView, goToToday } from './calendar.js';
+import { initCalendar, addCalendarEvent, removeCalendarEvent, loadEvents, changeView, goToToday, goPrev, goNext, getTitle } from './calendar.js';
 import { initDB, addEvent, deleteEvent, deleteEventByTitle, getUpcomingEvents, getAllEvents, getEventsByDateRange, checkConflicts, addRecurringEvents } from './storage.js';
 import { parseVoiceCommand } from './nlp.js';
 import speechManager from './speech.js';
@@ -47,6 +47,9 @@ async function init() {
   });
   console.log('✅ 日历就绪');
 
+  // 初始化日历标题
+  updateCalendarTitle();
+
   // 3. 加载已有事件
   await refreshCalendarEvents();
   await refreshUpcomingEvents();
@@ -86,12 +89,24 @@ function bindEventListeners() {
       // 更新 active 状态
       document.querySelectorAll('.btn-view').forEach(b => b.classList.remove('active'));
       e.currentTarget.classList.add('active');
+      updateCalendarTitle();
     });
   });
 
   // 今天按钮
   document.getElementById('btn-today')?.addEventListener('click', () => {
     goToToday();
+    updateCalendarTitle();
+  });
+
+  // 前/后翻页按钮
+  document.getElementById('btn-prev')?.addEventListener('click', () => {
+    goPrev();
+    updateCalendarTitle();
+  });
+  document.getElementById('btn-next')?.addEventListener('click', () => {
+    goNext();
+    updateCalendarTitle();
   });
 
   // 手动添加按钮
@@ -446,6 +461,15 @@ async function refreshCalendarEvents() {
 async function refreshUpcomingEvents() {
   const events = await getUpcomingEvents(10);
   renderUpcomingEvents(events);
+}
+
+// ============ 日历标题更新 ============
+
+function updateCalendarTitle() {
+  const titleEl = document.getElementById('calendar-title');
+  if (titleEl) {
+    titleEl.textContent = getTitle();
+  }
 }
 
 // ============ 工具函数 ============
