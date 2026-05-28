@@ -1,0 +1,26 @@
+{
+  "name": "voice-calendar",
+  "version": "1.0.0",
+  "description": "> 一个以语音交互为核心的智能日历管理工具，帮助用户通过自然语言语音实现日程的高效管理。",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/huh7i5/260529.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/huh7i5/260529/issues"
+  },
+  "homepage": "https://github.com/huh7i5/260529#readme",
+  "dependencies": {
+    "chrono-node": "^2.9.1",
+    "dexie": "^4.4.3",
+    "fullcalendar": "^6.1.20",
+    "vite": "^8.0.14"
+  }
+}

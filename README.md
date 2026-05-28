@@ -24,7 +24,7 @@
 
 ```bash
 # 克隆仓库
-git clone https://github.com/YOUR_USERNAME/voice-calendar.git
+git clone https://github.com/huh7i5/260529.git
 
 # 进入项目目录
 cd voice-calendar

@@ -5,3 +5,6 @@ Thumbs.db
 .vscode/
 .idea/
 dist/
+.env
+.env.local
+package-lock.json

@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="VoiCal - 语音日历工具，通过中文语音快速管理日程" />
+  <title>VoiCal - 语音日历工具</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- Header -->
+    <header id="app-header">
+      <div class="header-left">
+        <h1 class="logo">
+          <span class="logo-icon">🗓️</span>
+          <span class="logo-text">VoiCal</span>
+        </h1>
+        <span class="logo-subtitle">语音日历工具</span>
+      </div>
+      <div class="header-right">
+        <button id="btn-today" class="btn btn-ghost">今天</button>
+        <div class="view-switcher">
+          <button class="btn btn-view active" data-view="dayGridMonth">月</button>
+          <button class="btn btn-view" data-view="timeGridWeek">周</button>
+          <button class="btn btn-view" data-view="timeGridDay">日</button>
+        </div>
+        <button id="btn-add-manual" class="btn btn-primary">
+          <span class="btn-icon">+</span> 添加事件
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main id="main-content">
+      <!-- Calendar Area -->
+      <section id="calendar-section">
+        <div id="calendar"></div>
+      </section>
+
+      <!-- Voice & Events Sidebar -->
+      <aside id="sidebar">
+        <!-- Voice Panel -->
+        <div id="voice-panel" class="sidebar-card">
+          <h2 class="card-title">语音助手</h2>
+          <p id="voice-hint" class="voice-hint">点击麦克风，说出你的指令</p>
+
+          <!-- Voice Transcript Display -->
+          <div id="voice-transcript" class="voice-transcript hidden">
+            <span id="transcript-text"></span>
+            <span id="transcript-cursor" class="cursor-blink">|</span>
+          </div>
+
+          <!-- Voice Feedback -->
+          <div id="voice-feedback" class="voice-feedback hidden">
+            <div class="feedback-icon">✓</div>
+            <p id="feedback-text"></p>
+          </div>
+
+          <!-- Mic Button -->
+          <div class="mic-container">
+            <div id="mic-ripple-1" class="mic-ripple"></div>
+            <div id="mic-ripple-2" class="mic-ripple"></div>
+            <div id="mic-ripple-3" class="mic-ripple"></div>
+            <button id="btn-mic" class="btn-mic" title="点击开始语音输入">
+              <svg id="mic-icon" viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                <line x1="12" y1="19" x2="12" y2="23"></line>
+                <line x1="8" y1="23" x2="16" y2="23"></line>
+              </svg>
+              <svg id="mic-stop-icon" class="hidden" viewBox="0 0 24 24" width="32" height="32" fill="currentColor">
+                <rect x="6" y="6" width="12" height="12" rx="2"></rect>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Example Commands -->
+          <div class="voice-examples">
+            <p class="examples-title">试试说：</p>
+            <div class="example-chips">
+              <span class="chip">"添加明天下午三点开会"</span>
+              <span class="chip">"今天有什么安排"</span>
+              <span class="chip">"删除开会"</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Upcoming Events -->
+        <div id="events-panel" class="sidebar-card">
+          <h2 class="card-title">即将到来</h2>
+          <div id="events-list" class="events-list">
+            <p class="empty-state">暂无日程安排</p>
+          </div>
+        </div>
+      </aside>
+    </main>
+
+    <!-- Manual Add Event Modal -->
+    <div id="modal-overlay" class="modal-overlay hidden">
+      <div id="modal-add-event" class="modal">
+        <div class="modal-header">
+          <h2>添加事件</h2>
+          <button id="btn-modal-close" class="btn-close">&times;</button>
+        </div>
+        <form id="form-add-event" class="modal-form">
+          <div class="form-group">
+            <label for="input-title">事件标题</label>
+            <input type="text" id="input-title" placeholder="例如：团队会议" required />
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="input-date">日期</label>
+              <input type="date" id="input-date" required />
+            </div>
+            <div class="form-group">
+              <label for="input-time">时间</label>
+              <input type="time" id="input-time" required />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="input-duration">时长（分钟）</label>
+            <input type="number" id="input-duration" value="60" min="15" step="15" />
+          </div>
+          <div class="form-group">
+            <label for="input-reminder">提前提醒</label>
+            <select id="input-reminder">
+              <option value="0">不提醒</option>
+              <option value="5">5 分钟前</option>
+              <option value="15" selected>15 分钟前</option>
+              <option value="30">30 分钟前</option>
+              <option value="60">1 小时前</option>
+            </select>
+          </div>
+          <div class="form-actions">
+            <button type="button" id="btn-cancel" class="btn btn-ghost">取消</button>
+            <button type="submit" class="btn btn-primary">确认添加</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
+
+    <!-- Browser Compatibility Warning -->
+    <div id="compat-warning" class="compat-warning hidden">
+      <p>⚠️ 当前浏览器不支持语音识别，请使用 Chrome 或 Edge 浏览器。手动输入功能仍可正常使用。</p>
+      <button id="btn-dismiss-warning" class="btn btn-ghost btn-sm">知道了</button>
+    </div>
+  </div>
+
+  <script type="module" src="/js/main.js"></script>
+</body>
+</html>
