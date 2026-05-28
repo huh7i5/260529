@@ -83,6 +83,78 @@
   --sidebar-width: 360px;
 }
 
+/* ---------- Dark Theme ---------- */
+[data-theme="dark"] {
+  --color-bg: #1c1b1a;
+  --color-bg-alt: #252423;
+  --color-surface: #2d2c2a;
+  --color-surface-hover: #3a3836;
+  --color-border: #3e3c39;
+  --color-border-light: #333230;
+
+  --color-text: #e8e6e1;
+  --color-text-secondary: #a09d98;
+  --color-text-tertiary: #6b6966;
+
+  --color-primary: #ef7f65;
+  --color-primary-hover: #f5967f;
+  --color-primary-light: rgba(239, 127, 101, 0.12);
+  --color-primary-text: #1c1b1a;
+
+  --color-accent: #6aa8e8;
+  --color-accent-light: rgba(106, 168, 232, 0.12);
+
+  --color-success: #5cc48d;
+  --color-success-light: rgba(92, 196, 141, 0.12);
+  --color-warning: #f0ba5e;
+  --color-warning-light: rgba(240, 186, 94, 0.12);
+  --color-danger: #e86060;
+  --color-danger-light: rgba(232, 96, 96, 0.12);
+
+  --shadow-xs: 0 1px 2px rgba(0,0,0,0.2);
+  --shadow-sm: 0 2px 8px rgba(0,0,0,0.25);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.3);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.35);
+  --shadow-xl: 0 16px 48px rgba(0,0,0,0.4);
+}
+
+/* Auto dark mode for users who prefer it */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --color-bg: #1c1b1a;
+    --color-bg-alt: #252423;
+    --color-surface: #2d2c2a;
+    --color-surface-hover: #3a3836;
+    --color-border: #3e3c39;
+    --color-border-light: #333230;
+
+    --color-text: #e8e6e1;
+    --color-text-secondary: #a09d98;
+    --color-text-tertiary: #6b6966;
+
+    --color-primary: #ef7f65;
+    --color-primary-hover: #f5967f;
+    --color-primary-light: rgba(239, 127, 101, 0.12);
+    --color-primary-text: #1c1b1a;
+
+    --color-accent: #6aa8e8;
+    --color-accent-light: rgba(106, 168, 232, 0.12);
+
+    --color-success: #5cc48d;
+    --color-success-light: rgba(92, 196, 141, 0.12);
+    --color-warning: #f0ba5e;
+    --color-warning-light: rgba(240, 186, 94, 0.12);
+    --color-danger: #e86060;
+    --color-danger-light: rgba(232, 96, 96, 0.12);
+
+    --shadow-xs: 0 1px 2px rgba(0,0,0,0.2);
+    --shadow-sm: 0 2px 8px rgba(0,0,0,0.25);
+    --shadow-md: 0 4px 16px rgba(0,0,0,0.3);
+    --shadow-lg: 0 8px 32px rgba(0,0,0,0.35);
+    --shadow-xl: 0 16px 48px rgba(0,0,0,0.4);
+  }
+}
+
 /* ---------- Reset ---------- */
 *, *::before, *::after {
   margin: 0;
@@ -104,6 +176,7 @@ body {
   line-height: 1.6;
   min-height: 100vh;
   overflow-x: hidden;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* ---------- Layout ---------- */
@@ -857,6 +930,58 @@ body {
 /* ---------- Utility ---------- */
 .hidden {
   display: none !important;
+}
+
+/* ---------- Theme Toggle ---------- */
+.btn-theme-toggle {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  transition: all var(--transition-fast);
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.btn-theme-toggle:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+  transform: rotate(20deg);
+}
+
+/* ---------- FullCalendar Dark Overrides ---------- */
+[data-theme="dark"] .fc {
+  --fc-border-color: var(--color-border);
+  --fc-today-bg-color: var(--color-primary-light);
+  --fc-event-bg-color: var(--color-primary);
+  --fc-event-border-color: var(--color-primary);
+  --fc-page-bg-color: transparent;
+  --fc-neutral-bg-color: var(--color-surface);
+  --fc-list-event-hover-bg-color: var(--color-surface-hover);
+}
+
+[data-theme="dark"] .fc .fc-col-header-cell {
+  color: var(--color-text-secondary);
+}
+
+[data-theme="dark"] .fc .fc-timegrid-slot-label {
+  color: var(--color-text-tertiary);
+}
+
+[data-theme="dark"] .fc .fc-daygrid-day-number {
+  color: var(--color-text-secondary);
+}
+
+[data-theme="dark"] .fc .fc-day-today .fc-daygrid-day-number {
+  background: var(--color-primary);
+  color: var(--color-primary-text);
 }
 
 /* ---------- Responsive ---------- */

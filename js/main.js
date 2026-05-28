@@ -109,6 +109,10 @@ function bindEventListeners() {
     updateCalendarTitle();
   });
 
+  // 主题切换
+  initTheme();
+  document.getElementById('btn-theme-toggle')?.addEventListener('click', toggleTheme);
+
   // 手动添加按钮
   document.getElementById('btn-add-manual')?.addEventListener('click', () => {
     openAddEventModal();
@@ -469,6 +473,37 @@ function updateCalendarTitle() {
   const titleEl = document.getElementById('calendar-title');
   if (titleEl) {
     titleEl.textContent = getTitle();
+  }
+}
+
+// ============ 主题切换 ============
+
+function initTheme() {
+  const saved = localStorage.getItem('voical-theme');
+  const btn = document.getElementById('btn-theme-toggle');
+  if (saved) {
+    document.documentElement.setAttribute('data-theme', saved);
+    if (btn) btn.textContent = saved === 'dark' ? '☀️' : '🌙';
+  } else {
+    // 跟随系统偏好
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    if (btn) btn.textContent = prefersDark ? '☀️' : '🌙';
+  }
+}
+
+function toggleTheme() {
+  const html = document.documentElement;
+  const current = html.getAttribute('data-theme');
+  const btn = document.getElementById('btn-theme-toggle');
+
+  if (current === 'dark') {
+    html.setAttribute('data-theme', 'light');
+    localStorage.setItem('voical-theme', 'light');
+    if (btn) btn.textContent = '🌙';
+  } else {
+    html.setAttribute('data-theme', 'dark');
+    localStorage.setItem('voical-theme', 'dark');
+    if (btn) btn.textContent = '☀️';
   }
 }
 
