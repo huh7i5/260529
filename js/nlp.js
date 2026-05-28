@@ -4,6 +4,10 @@
  * Parses spoken Chinese text into structured calendar commands.
  * Uses chrono-node (zh) for date/time extraction and regex-based
  * intent classification.
+ *
+ * Features:
+ *  - Smart Time Correction: fixes conflicting period + hour combos
+ *  - Recurring Events: 每天/每周X/每月X日/每个工作日
  */
 
 import * as chrono from 'chrono-node';
@@ -13,6 +17,10 @@ import * as chrono from 'chrono-node';
 // ──────────────────────────────────────────────
 
 const INTENT_PATTERNS = [
+  {
+    intent: 'RECURRING',
+    pattern: /每天|每日|每周|每月|每个工作日/,
+  },
   {
     intent: 'QUERY',
     pattern: /查询|查看|搜索|查找|有什么|什么安排|什么事|哪些|日程|有啥|几个|多少/,
@@ -119,6 +127,120 @@ function periodToHourOffset(period) {
  */
 function isPMPeriod(period) {
   return ['下午', '晚上', '傍晚'].includes(period);
+}
+
+// ──────────────────────────────────────────────
+// Smart Time Correction
+// ──────────────────────────────────────────────
+
+/**
+ * Period name → typical hour boundaries [min, max].
+ * If the stated hour falls outside, we know something is off.
+ */
+const PERIOD_BOUNDS = {
+  '凌晨': [0, 5],
+  '早上': [5, 9],
+  '早晨': [5, 9],
+  '上午': [6, 12],
+  '中午': [11, 13],
+  '下午': [12, 18],
+  '傍晚': [16, 19],
+  '晚上': [18, 24],
+};
+
+/**
+ * Fix conflicting period + hour combinations.
+ *
+ * Examples:
+ *  - ('早上', 23) → { hour: 11, corrected: true, description: '早上23点→11点' }
+ *  - ('下午', 3)  → { hour: 15, corrected: true, description: '下午3点→15:00' }
+ *  - ('上午', 11) → { hour: 11, corrected: false }
+ *  - ('早上', 13) → { hour: 13, corrected: true, description: '早上13点→13:00' }
+ *
+ * @param {string} period  Chinese period word (e.g. 早上, 下午, 晚上)
+ * @param {number} hour    Hour value (0-23) as parsed
+ * @returns {{ hour: number, corrected: boolean, description?: string }}
+ */
+export function correctTime(period, hour) {
+  if (!period || hour == null || Number.isNaN(hour)) {
+    return { hour, corrected: false };
+  }
+
+  const bounds = PERIOD_BOUNDS[period];
+  if (!bounds) {
+    return { hour, corrected: false };
+  }
+
+  const [lo, hi] = bounds;
+  let correctedHour = hour;
+  let corrected = false;
+  let description;
+
+  // Case 1: PM period but hour < 13 → add 12
+  // e.g. 下午3点 → 15, 晚上7点 → 19
+  if (isPMPeriod(period) && hour >= 1 && hour < 12) {
+    correctedHour = hour + 12;
+    corrected = true;
+    description = `${period}${hour}点→${correctedHour}:00`;
+  }
+  // Case 2: AM period but impossibly high hour (>=20) → subtract 12
+  // e.g. 早上23点 → user probably meant 11 AM
+  else if (!isPMPeriod(period) && period !== '中午' && hour >= 20) {
+    correctedHour = hour - 12;
+    corrected = true;
+    description = `${period}${hour}点→${correctedHour}:00`;
+  }
+  // Case 3: AM period but hour 13-19 → keep as-is (valid 24h), just flag
+  // e.g. 早上13点 → 13:00 (probably meant 下午1点)
+  else if (!isPMPeriod(period) && period !== '中午' && hour > 12 && hour <= 19) {
+    corrected = true;
+    description = `${period}${hour}点→${hour}:00（已按24小时制处理）`;
+  }
+  // Case 4: hour is within bounds, no correction needed
+
+  return corrected
+    ? { hour: correctedHour, corrected: true, description }
+    : { hour, corrected: false };
+}
+
+/**
+ * Post-process a chrono result to apply smart time corrections.
+ * Detects period words in the original text near the parsed time span
+ * and adjusts hours when conflicts are found.
+ *
+ * @param {string} originalText  The original input text
+ * @param {object[]} chronoResults  Array of chrono ParsedResult
+ * @returns {{ results: object[], correction: string|undefined }}
+ */
+function postProcessTimeCorrection(originalText, chronoResults) {
+  if (!chronoResults || chronoResults.length === 0) {
+    return { results: chronoResults, correction: undefined };
+  }
+
+  const periodRegex = /(凌晨|早上|早晨|上午|中午|下午|傍晚|晚上)/;
+  const match = originalText.match(periodRegex);
+
+  if (!match) {
+    return { results: chronoResults, correction: undefined };
+  }
+
+  const period = match[1];
+  const first = chronoResults[0];
+
+  // Only correct if chrono assigned a definite hour
+  if (!first.start.isCertain('hour')) {
+    return { results: chronoResults, correction: undefined };
+  }
+
+  const parsedHour = first.start.get('hour');
+  const result = correctTime(period, parsedHour);
+
+  if (result.corrected) {
+    first.start.assign('hour', result.hour);
+    return { results: chronoResults, correction: result.description };
+  }
+
+  return { results: chronoResults, correction: undefined };
 }
 
 // ──────────────────────────────────────────────
@@ -298,6 +420,116 @@ function extractTitle(text, chronoResults) {
 }
 
 // ──────────────────────────────────────────────
+// Recurring-event helpers
+// ──────────────────────────────────────────────
+
+const DAY_OF_WEEK_MAP = {
+  '一': 1, '二': 2, '三': 3, '四': 4,
+  '五': 5, '六': 6, '日': 0, '天': 0,
+};
+
+/**
+ * Parse a RECURRING intent body and return recurrence metadata
+ * plus the first occurrence date.
+ *
+ * @param {string} body      Text after intent-keyword stripping
+ * @param {Date}   refDate   Reference date (usually now)
+ * @returns {{ recurrence: object, startDate: Date, endDate: Date, title: string }}
+ */
+function parseRecurrence(body, refDate) {
+  const now = refDate || new Date();
+  let recurrence = null;
+  let title = body;
+
+  // ── 每天 / 每日 ──
+  if (/每天|每日/.test(body)) {
+    recurrence = { type: 'daily' };
+    title = body.replace(/每天|每日/g, '').trim();
+  }
+  // ── 每个工作日 ──
+  else if (/每个工作日/.test(body)) {
+    recurrence = { type: 'weekdays' };
+    title = body.replace(/每个工作日/g, '').trim();
+  }
+  // ── 每周X ──
+  else if (/每周/.test(body)) {
+    const m = body.match(/每周([一二三四五六日天])/);
+    const dayOfWeek = m ? (DAY_OF_WEEK_MAP[m[1]] ?? 1) : 1;
+    recurrence = { type: 'weekly', dayOfWeek };
+    title = body.replace(/每周[一二三四五六日天]?/g, '').trim();
+  }
+  // ── 每月X日/号 ──
+  else if (/每月/.test(body)) {
+    const m = body.match(/每月([零〇一二两三四五六七八九十百]+|\d+)[日号]/);
+    const dayOfMonth = m ? chineseNumToInt(m[1]) : 1;
+    recurrence = { type: 'monthly', dayOfMonth: Number.isNaN(dayOfMonth) ? 1 : dayOfMonth };
+    title = body.replace(/每月([零〇一二两三四五六七八九十百]+|\d+)[日号]?/g, '').trim();
+  }
+
+  // Extract time from remaining text
+  const results = extractDates(title, now);
+  let startDate;
+  let endDate;
+
+  if (results.length > 0) {
+    startDate = results[0].start.date();
+    if (!results[0].start.isCertain('hour')) {
+      startDate.setHours(9, 0, 0, 0);
+    }
+    endDate = results[0].end
+      ? results[0].end.date()
+      : new Date(startDate.getTime() + 60 * 60 * 1000);
+    title = extractTitle(title, results) || title;
+  } else {
+    // Default to 09:00
+    startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 9, 0, 0);
+    endDate = new Date(startDate.getTime() + 60 * 60 * 1000);
+  }
+
+  // Calculate actual first occurrence
+  if (recurrence) {
+    if (recurrence.type === 'weekly' && recurrence.dayOfWeek != null) {
+      const currentDay = now.getDay();
+      let diff = recurrence.dayOfWeek - currentDay;
+      if (diff < 0) diff += 7;
+      if (diff === 0 && startDate.getTime() < now.getTime()) diff = 7;
+      const firstDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + diff);
+      startDate.setFullYear(firstDate.getFullYear(), firstDate.getMonth(), firstDate.getDate());
+      endDate = new Date(startDate.getTime() + 60 * 60 * 1000);
+    } else if (recurrence.type === 'monthly' && recurrence.dayOfMonth != null) {
+      const firstDate = new Date(now.getFullYear(), now.getMonth(), recurrence.dayOfMonth);
+      if (firstDate.getTime() < now.getTime()) {
+        firstDate.setMonth(firstDate.getMonth() + 1);
+      }
+      startDate.setFullYear(firstDate.getFullYear(), firstDate.getMonth(), firstDate.getDate());
+      endDate = new Date(startDate.getTime() + 60 * 60 * 1000);
+    } else if (recurrence.type === 'weekdays') {
+      const currentDay = now.getDay();
+      let diff = 0;
+      if (currentDay === 0) diff = 1;
+      else if (currentDay === 6) diff = 2;
+      else if (startDate.getTime() < now.getTime()) {
+        diff = currentDay === 5 ? 3 : 1;
+      }
+      if (diff > 0) {
+        const firstDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + diff);
+        startDate.setFullYear(firstDate.getFullYear(), firstDate.getMonth(), firstDate.getDate());
+        endDate = new Date(startDate.getTime() + 60 * 60 * 1000);
+      }
+    }
+    // daily: startDate is already today or next occurrence, fine as-is
+  }
+
+  // Clean up title
+  title = title
+    .replace(/[的,，、\s]+$/g, '')
+    .replace(/^[的,，、\s]+/g, '')
+    .trim() || '新事件';
+
+  return { recurrence, startDate, endDate, title };
+}
+
+// ──────────────────────────────────────────────
 // Main export: parseVoiceCommand
 // ──────────────────────────────────────────────
 
@@ -306,16 +538,18 @@ function extractTitle(text, chronoResults) {
  *
  * @param {string} text  Raw recognised text from the speech API.
  * @returns {{
- *   intent: 'ADD'|'DELETE'|'QUERY'|'MODIFY'|'UNKNOWN',
+ *   intent: 'ADD'|'DELETE'|'QUERY'|'MODIFY'|'RECURRING'|'UNKNOWN',
  *   title: string,
  *   startDate: Date|null,
  *   endDate: Date|null,
  *   originalText: string,
+ *   correction?: string,
+ *   recurrence?: { type: 'daily'|'weekly'|'monthly'|'weekdays', dayOfWeek?: number, dayOfMonth?: number },
  * }}
  */
 export function parseVoiceCommand(text) {
   if (!text || typeof text !== 'string') {
-    return { intent: 'UNKNOWN', title: '', startDate: null, endDate: null, originalText: text || '' };
+    return { intent: 'UNKNOWN', title: '', startDate: null, endDate: null, originalText: text || '', correction: undefined };
   }
 
   const trimmed = text.trim();
@@ -331,9 +565,16 @@ export function parseVoiceCommand(text) {
 
   // 3. Branch on intent
   switch (intent) {
+    // ── RECURRING ─────────────────────────────
+    case 'RECURRING': {
+      const { recurrence, startDate, endDate, title } = parseRecurrence(body, now);
+      return { intent: 'RECURRING', title, startDate, endDate, originalText, recurrence };
+    }
+
     // ── ADD ──────────────────────────────────
     case 'ADD': {
-      const results = extractDates(body, now);
+      const rawResults = extractDates(body, now);
+      const { results, correction } = postProcessTimeCorrection(body, rawResults);
       let startDate;
       let endDate;
 
@@ -360,7 +601,7 @@ export function parseVoiceCommand(text) {
 
       const title = extractTitle(body, results) || body || '新事件';
 
-      return { intent: 'ADD', title, startDate, endDate, originalText };
+      return { intent: 'ADD', title, startDate, endDate, originalText, correction };
     }
 
     // ── QUERY ────────────────────────────────
@@ -372,6 +613,7 @@ export function parseVoiceCommand(text) {
         startDate: range.start,
         endDate: range.end,
         originalText,
+        correction: undefined,
       };
     }
 
@@ -388,6 +630,7 @@ export function parseVoiceCommand(text) {
         startDate: null,
         endDate: null,
         originalText,
+        correction: undefined,
       };
     }
 
@@ -399,13 +642,17 @@ export function parseVoiceCommand(text) {
       let title = body;
       let startDate = null;
       let endDate = null;
+      let correction;
 
       if (splitMatch) {
         title = splitMatch[1]
           .replace(/把|将|的时间|的日期/g, '')
           .trim();
         const timePart = splitMatch[2].trim();
-        const results = extractDates(timePart, now);
+        const rawResults = extractDates(timePart, now);
+        const postProcessed = postProcessTimeCorrection(timePart, rawResults);
+        const results = postProcessed.results;
+        correction = postProcessed.correction;
         if (results.length > 0) {
           startDate = results[0].start.date();
           if (!results[0].start.isCertain('hour')) {
@@ -417,7 +664,10 @@ export function parseVoiceCommand(text) {
         }
       } else {
         // Fallback: try to extract dates from the whole body
-        const results = extractDates(body, now);
+        const rawResults = extractDates(body, now);
+        const postProcessed = postProcessTimeCorrection(body, rawResults);
+        const results = postProcessed.results;
+        correction = postProcessed.correction;
         if (results.length > 0) {
           title = extractTitle(body, results) || body;
           startDate = results[0].start.date();
@@ -430,14 +680,15 @@ export function parseVoiceCommand(text) {
         }
       }
 
-      return { intent: 'MODIFY', title, startDate, endDate, originalText };
+      return { intent: 'MODIFY', title, startDate, endDate, originalText, correction };
     }
 
     // ── UNKNOWN → heuristic: maybe an implicit ADD? ─
     default: {
       // If the text contains a recognisable date and some leftover text,
       // treat it as an ADD command.
-      const results = extractDates(trimmed, now);
+      const rawResults = extractDates(trimmed, now);
+      const { results, correction } = postProcessTimeCorrection(trimmed, rawResults);
       if (results.length > 0) {
         const title = extractTitle(trimmed, results) || trimmed;
         // Only promote to ADD if there's actually a title left
@@ -450,11 +701,11 @@ export function parseVoiceCommand(text) {
             ? results[0].end.date()
             : new Date(startDate.getTime() + 60 * 60 * 1000);
 
-          return { intent: 'ADD', title, startDate, endDate, originalText };
+          return { intent: 'ADD', title, startDate, endDate, originalText, correction };
         }
       }
 
-      return { intent: 'UNKNOWN', title: trimmed, startDate: null, endDate: null, originalText };
+      return { intent: 'UNKNOWN', title: trimmed, startDate: null, endDate: null, originalText, correction: undefined };
     }
   }
 }
