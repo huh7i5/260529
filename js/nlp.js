@@ -567,7 +567,8 @@ export function parseVoiceCommand(text) {
   switch (intent) {
     // ── RECURRING ─────────────────────────────
     case 'RECURRING': {
-      const { recurrence, startDate, endDate, title } = parseRecurrence(body, now);
+      // Pass full text (not stripped body) — stripIntentKeyword would break 每周五 → 五
+      const { recurrence, startDate, endDate, title } = parseRecurrence(trimmed, now);
       return { intent: 'RECURRING', title, startDate, endDate, originalText, recurrence };
     }
 
