@@ -1,26 +1,38 @@
 {
   "name": "voice-calendar",
   "version": "1.0.0",
-  "description": "> 一个以语音交互为核心的智能日历管理工具，帮助用户通过自然语言语音实现日程的高效管理。",
-  "main": "index.js",
+  "description": "VoiCal - 语音日历工具，通过中文语音快速管理日程。借助 Antigravity (Google DeepMind) 开发。",
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/huh7i5/260529.git"
   },
-  "keywords": [],
+  "keywords": [
+    "voice",
+    "calendar",
+    "speech-recognition",
+    "chinese-nlp"
+  ],
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/huh7i5/260529/issues"
   },
   "homepage": "https://github.com/huh7i5/260529#readme",
   "dependencies": {
-    "chrono-node": "^2.9.1",
-    "dexie": "^4.4.3",
-    "fullcalendar": "^6.1.20",
-    "vite": "^8.0.14"
+    "@fullcalendar/core": "^6.1.20",
+    "@fullcalendar/daygrid": "^6.1.20",
+    "@fullcalendar/interaction": "^6.1.20",
+    "@fullcalendar/timegrid": "^6.1.20",
+    "chrono-node": "^2.7.7",
+    "dexie": "^4.0.11"
+  },
+  "devDependencies": {
+    "vite": "^6.3.5"
   }
 }
