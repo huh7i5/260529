@@ -10,6 +10,7 @@ import { initDB, addEvent, deleteEvent, deleteEventByTitle, getUpcomingEvents, g
 import { parseVoiceCommand } from './nlp.js';
 import speechManager from './speech.js';
 import { initReminder, setGetEventsCallback } from './reminder.js';
+import { exportToICS } from './export.js';
 import {
   showToast,
   openAddEventModal,
@@ -116,6 +117,12 @@ function bindEventListeners() {
   // 手动添加按钮
   document.getElementById('btn-add-manual')?.addEventListener('click', () => {
     openAddEventModal();
+  });
+
+  // 导出按钮
+  document.getElementById('btn-export')?.addEventListener('click', async () => {
+    const result = await exportToICS();
+    showToast(result.message, result.success ? 'success' : 'warning');
   });
 
   // Modal 关闭
