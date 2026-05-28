@@ -14,8 +14,8 @@ import * as chrono from 'chrono-node';
 
 const INTENT_PATTERNS = [
   {
-    intent: 'ADD',
-    pattern: /添加|新建|新增|创建|安排|设置|帮我加|记一下|加一个/,
+    intent: 'QUERY',
+    pattern: /查询|查看|搜索|查找|有什么|什么安排|什么事|哪些|日程|有啥|几个|多少/,
   },
   {
     intent: 'DELETE',
@@ -26,8 +26,8 @@ const INTENT_PATTERNS = [
     pattern: /修改|更改|调整|改到|改为/,
   },
   {
-    intent: 'QUERY',
-    pattern: /查询|查看|搜索|查找|有什么|什么安排|什么事|哪些|日程/,
+    intent: 'ADD',
+    pattern: /添加|新建|新增|创建|安排一|设置|帮我加|记一下|加一个|帮我安排/,
   },
 ];
 

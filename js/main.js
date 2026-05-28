@@ -6,7 +6,7 @@
  */
 
 import { initCalendar, addCalendarEvent, removeCalendarEvent, loadEvents, changeView, goToToday } from './calendar.js';
-import { initDB, addEvent, deleteEvent, deleteEventByTitle, getUpcomingEvents, getAllEvents, getEventsByDateRange } from './storage.js';
+import { initDB, addEvent, deleteEvent, deleteEventByTitle, getUpcomingEvents, getAllEvents, getEventsByDateRange, checkConflicts, addRecurringEvents } from './storage.js';
 import { parseVoiceCommand } from './nlp.js';
 import speechManager from './speech.js';
 import { initReminder, setGetEventsCallback } from './reminder.js';
@@ -66,6 +66,9 @@ async function init() {
   setupSpeechCallbacks();
 
   console.log('🚀 VoiCal 就绪！');
+
+  // 8. 今日简报（延迟2秒，等页面加载完）
+  setTimeout(() => morningBriefing(), 2000);
 }
 
 // ============ 事件监听绑定 ============
@@ -200,9 +203,17 @@ async function processVoiceCommand(text) {
   const command = parseVoiceCommand(text);
   console.log('🔍 解析结果:', command);
 
+  // 如果有智能纠错，先提示
+  if (command.correction) {
+    showToast(`智能纠正：${command.correction}`, 'warning', 4000);
+  }
+
   switch (command.intent) {
     case 'ADD':
       await handleAddByVoice(command);
+      break;
+    case 'RECURRING':
+      await handleRecurringByVoice(command);
       break;
     case 'DELETE':
       await handleDeleteByVoice(command);
@@ -238,6 +249,14 @@ async function handleAddByVoice(command) {
   const end = command.endDate || new Date(start.getTime() + 60 * 60 * 1000);
 
   try {
+    // 冲突检测
+    const conflicts = await checkConflicts(start, end);
+    if (conflicts.length > 0) {
+      const conflictNames = conflicts.map(c => c.title).join('、');
+      showToast(`⚠️ 时间冲突：与「${conflictNames}」重叠`, 'warning', 5000);
+      await speechManager.speak(`注意，这个时间段与${conflictNames}有冲突，已为您添加`);
+    }
+
     const id = await addEvent({
       title,
       start: start.toISOString(),
@@ -468,6 +487,92 @@ function getDateLabel(date) {
   if (diff === 2) return '后天';
   if (diff === -1) return '昨天';
   return `${date.getMonth() + 1}月${date.getDate()}日`;
+}
+
+// ============ 语音 → 重复事件 ============
+
+async function handleRecurringByVoice(command) {
+  if (!command.startDate) {
+    showVoiceFeedback('无法识别时间，请再说一次', true);
+    await speechManager.speak('我没有识别到时间，请再说一次');
+    return;
+  }
+
+  const title = command.title || '重复事件';
+  const start = command.startDate;
+  const end = command.endDate || new Date(start.getTime() + 60 * 60 * 1000);
+  const recurrence = command.recurrence;
+
+  if (!recurrence) {
+    // 降级为普通添加
+    await handleAddByVoice(command);
+    return;
+  }
+
+  try {
+    const count = await addRecurringEvents({
+      title,
+      startDate: start,
+      endDate: end,
+      recurrence,
+      weeks: 8,
+      reminder: 15
+    });
+
+    await refreshCalendarEvents();
+    await refreshUpcomingEvents();
+
+    const typeDesc = {
+      'daily': '每天',
+      'weekly': `每周${['日','一','二','三','四','五','六'][recurrence.dayOfWeek || 0]}`,
+      'monthly': `每月${recurrence.dayOfMonth}日`,
+      'weekdays': '每个工作日'
+    }[recurrence.type] || '定期';
+
+    const feedback = `已创建重复事件：${typeDesc} ${title}，共 ${count} 个`;
+    showVoiceFeedback(feedback);
+    showToast(feedback, 'success');
+    await speechManager.speak(`已创建${typeDesc}的${title}，接下来8周共${count}个`);
+
+  } catch (error) {
+    console.error('创建重复事件失败:', error);
+    showVoiceFeedback('创建重复事件失败', true);
+  }
+}
+
+// ============ 今日简报 ============
+
+async function morningBriefing() {
+  if (!speechManager.isSupported()) return;
+
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayEnd = new Date();
+    todayEnd.setHours(23, 59, 59, 999);
+
+    const events = await getEventsByDateRange(today, todayEnd);
+
+    if (events.length === 0) {
+      showVoiceFeedback('今天暂无日程安排，祝您有美好的一天！');
+      await speechManager.speak('今天没有日程安排，祝您有美好的一天');
+    } else {
+      const summary = events.map(e => {
+        const t = new Date(e.start);
+        const h = t.getHours();
+        const m = t.getMinutes();
+        const period = h < 12 ? '上午' : h === 12 ? '中午' : '下午';
+        const dh = h > 12 ? h - 12 : h;
+        return `${period}${dh}点${m > 0 ? m + '分' : ''} ${e.title}`;
+      }).join('，');
+
+      const greeting = `今天有${events.length}个安排：${summary}`;
+      showVoiceFeedback(greeting);
+      await speechManager.speak(greeting);
+    }
+  } catch (error) {
+    console.error('今日简报失败:', error);
+  }
 }
 
 // ============ 启动 ============

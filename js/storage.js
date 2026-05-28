@@ -209,22 +209,109 @@ export async function updateEvent(id, changes) {
 
 /**
  * Normalise a value to an ISO-8601 string.
- * Accepts Date objects or strings; strings are returned as-is after
- * a basic validity check.
- * @param {string|Date} value
- * @returns {string} ISO string
  */
 function _toISO(value) {
   if (value instanceof Date) {
     return value.toISOString();
   }
-  // Already a string – trust the caller but try to validate
   if (typeof value === 'string') {
     return value;
   }
-  // Fallback: coerce
   return new Date(value).toISOString();
+}
+
+// ─── Conflict Detection ─────────────────────────────────────────────
+
+/**
+ * Check if a new event conflicts with existing events.
+ * @param {string|Date} start
+ * @param {string|Date} end
+ * @returns {Promise<Array>} list of conflicting events
+ */
+export async function checkConflicts(start, end) {
+  try {
+    const newStart = new Date(_toISO(start)).getTime();
+    const newEnd = new Date(_toISO(end)).getTime();
+
+    const allEvents = await db.events.toArray();
+    return allEvents.filter(event => {
+      const eStart = new Date(event.start).getTime();
+      const eEnd = event.end ? new Date(event.end).getTime() : eStart + 3600000;
+      // Two events overlap if one starts before the other ends
+      return newStart < eEnd && newEnd > eStart;
+    });
+  } catch (err) {
+    console.error('[Storage] checkConflicts failed:', err);
+    return [];
+  }
+}
+
+// ─── Recurring Events ───────────────────────────────────────────────
+
+/**
+ * Generate and store recurring events.
+ * @param {Object} params
+ * @param {string} params.title
+ * @param {Date} params.startDate - first occurrence start time
+ * @param {Date} params.endDate - first occurrence end time
+ * @param {Object} params.recurrence - { type, dayOfWeek?, dayOfMonth? }
+ * @param {number} [params.weeks=8] - how many weeks ahead to generate
+ * @param {number} [params.reminder=15]
+ * @returns {Promise<number>} number of events created
+ */
+export async function addRecurringEvents({ title, startDate, endDate, recurrence, weeks = 8, reminder = 15 }) {
+  try {
+    const events = [];
+    const duration = endDate.getTime() - startDate.getTime();
+    const totalDays = weeks * 7;
+
+    for (let dayOffset = 0; dayOffset < totalDays; dayOffset++) {
+      const candidateStart = new Date(startDate);
+      candidateStart.setDate(candidateStart.getDate() + dayOffset);
+
+      let shouldAdd = false;
+
+      switch (recurrence.type) {
+        case 'daily':
+          shouldAdd = true;
+          break;
+        case 'weekly':
+          shouldAdd = candidateStart.getDay() === recurrence.dayOfWeek;
+          break;
+        case 'monthly':
+          shouldAdd = candidateStart.getDate() === recurrence.dayOfMonth;
+          break;
+        case 'weekdays':
+          const dow = candidateStart.getDay();
+          shouldAdd = dow >= 1 && dow <= 5;
+          break;
+      }
+
+      if (shouldAdd) {
+        const candidateEnd = new Date(candidateStart.getTime() + duration);
+        events.push({
+          title,
+          start: candidateStart.toISOString(),
+          end: candidateEnd.toISOString(),
+          allDay: false,
+          reminder: reminder,
+          createdAt: new Date().toISOString()
+        });
+      }
+    }
+
+    if (events.length > 0) {
+      await db.events.bulkAdd(events);
+      console.log(`[Storage] Added ${events.length} recurring events: "${title}"`);
+    }
+
+    return events.length;
+  } catch (err) {
+    console.error('[Storage] addRecurringEvents failed:', err);
+    throw err;
+  }
 }
 
 // ─── Export DB instance ──────────────────────────────────────────────
 export { db };
+
