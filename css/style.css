@@ -1174,11 +1174,10 @@ body {
 
 /* Completed event style */
 .fc .fc-event.event-completed {
-  opacity: 0.5;
-  text-decoration: line-through;
+  opacity: 0.55;
 }
 
-.fc .fc-event.event-completed .fc-event-title {
+.fc .fc-event.event-completed .fc-event-title-text {
   text-decoration: line-through;
 }
 

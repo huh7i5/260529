@@ -133,8 +133,8 @@ export function addCalendarEvent(event) {
     start: event.start,
     end: event.end,
     allDay: event.allDay || false,
-    backgroundColor: isCompleted ? '#999' : (event.color || '#e8684a'),
-    borderColor: isCompleted ? '#999' : (event.color || '#e8684a'),
+    backgroundColor: event.color || '#e8684a',
+    borderColor: event.color || '#e8684a',
     classNames: isCompleted ? ['event-completed'] : [],
     extendedProps: {
       reminder: event.reminder || 0,
