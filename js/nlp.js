@@ -248,12 +248,18 @@ function postProcessTimeCorrection(originalText, chronoResults) {
 // before feeding into chrono so it can better parse them.
 // ──────────────────────────────────────────────
 
-/**
- * Replace informal Chinese time expressions with something chrono
- * can reliably parse, or that we can pick up in post-processing.
- */
 function preprocess(text) {
   let processed = text;
+
+  // 将常见的中文日期数字转换为阿拉伯数字，提升 chrono 的识别率
+  // 例如：“三十一号” -> “31号”，“五月” -> “5月”
+  processed = processed.replace(
+    /([零〇一二两三四五六七八九十]+)(号|日|月|年)/g,
+    (match, numStr, unit) => {
+      const num = chineseNumToInt(numStr);
+      return Number.isNaN(num) ? match : `${num}${unit}`;
+    }
+  );
 
   // Normalise common time phrase shortcuts
   // "三点半" → "三点三十分"
