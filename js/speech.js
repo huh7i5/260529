@@ -8,6 +8,27 @@ function friendlyError(type) {
   return msgs[type] || msgs['default'];
 }
 
+function downsampleBuffer(buffer, recordSampleRate, exportSampleRate) {
+  if (exportSampleRate === recordSampleRate) return buffer;
+  const sampleRateRatio = recordSampleRate / exportSampleRate;
+  const newLength = Math.round(buffer.length / sampleRateRatio);
+  const result = new Float32Array(newLength);
+  let offsetResult = 0;
+  let offsetBuffer = 0;
+  while (offsetResult < result.length) {
+    let nextOffsetBuffer = Math.round((offsetResult + 1) * sampleRateRatio);
+    let accum = 0, count = 0;
+    for (let i = offsetBuffer; i < nextOffsetBuffer && i < buffer.length; i++) {
+      accum += buffer[i];
+      count++;
+    }
+    result[offsetResult] = accum / count;
+    offsetResult++;
+    offsetBuffer = nextOffsetBuffer;
+  }
+  return result;
+}
+
 let audioCtx;
 let mediaStream;
 let recorder;
@@ -25,6 +46,10 @@ class SpeechManager {
 
   isSupported() {
     return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+  }
+
+  getStream() {
+    return mediaStream;
   }
 
   setState(newState) {
@@ -48,7 +73,6 @@ class SpeechManager {
         this.resolvePromise = resolve;
         this.finalText = '';
         this.isListening = true;
-        this.setState('listening');
 
         ws = new WebSocket('ws://localhost:3002');
         
@@ -60,6 +84,7 @@ class SpeechManager {
           }
           
           mediaStream = audioCtx.createMediaStreamSource(stream);
+          this.setState('listening');
           
           const bufferSize = 4096;
           if (audioCtx.createScriptProcessor) {
@@ -71,7 +96,12 @@ class SpeechManager {
           recorder.onaudioprocess = (e) => {
             if (!this.isListening || ws.readyState !== WebSocket.OPEN) return;
             const inputData = e.inputBuffer.getChannelData(0);
-            ws.send(inputData.buffer); // Float32Array buffer
+            
+            // 强制降采样，确保传入后端的都是纯净的 16000Hz 音频
+            const downsampled = downsampleBuffer(inputData, audioCtx.sampleRate, 16000);
+            
+            // 直接发送降采样后的独立 Float32Array 缓冲区
+            ws.send(downsampled.buffer);
           };
 
           mediaStream.connect(recorder);

@@ -33,22 +33,23 @@ export function initVisualizer(canvasId = 'mic-visualizer') {
 }
 
 /**
- * 开始捕获麦克风并绘制波形
+ * 开始绘制波形
+ * @param {MediaStreamAudioSourceNode} sourceStream - 从 SpeechManager 传入的现有音频源
  */
-export async function startVisualization() {
-  if (!canvas || !ctx) return;
+export async function startVisualization(sourceStream) {
+  if (!canvas || !ctx || !sourceStream) return;
 
   try {
-    // 独立获取麦克风流（与 SpeechRecognition 分开）
-    mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    // 共享现有的音频流，避免二次请求麦克风引发硬件冲突
+    mediaStream = sourceStream.mediaStream;
+    audioContext = sourceStream.context;
 
-    audioContext = new (window.AudioContext || window.webkitAudioContext)();
     analyser = audioContext.createAnalyser();
     analyser.fftSize = 128;
     analyser.smoothingTimeConstant = 0.75;
 
-    const source = audioContext.createMediaStreamSource(mediaStream);
-    source.connect(analyser);
+    // 连接到分析器，不影响原有的录音链路
+    sourceStream.connect(analyser);
 
     draw();
   } catch (err) {

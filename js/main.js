@@ -250,6 +250,14 @@ function setupSpeechCallbacks() {
 
   speechManager.onStateChange((state) => {
     setMicState(state === 'speaking' ? 'idle' : state);
+    
+    // 监听状态自动启动/停止可视化器，共享音频流避免硬件冲突
+    if (state === 'listening') {
+      const stream = speechManager.getStream();
+      if (stream) startVisualization(stream);
+    } else {
+      stopVisualization();
+    }
   });
 
   speechManager.onInterimResult((text) => {
@@ -276,13 +284,14 @@ async function handleMicClick() {
 
   try {
     isListening = true;
-    setMicState('listening');
+    // 不再这里设置 'listening'，因为会由 speechManager 内部真正连上后触发 setState('listening')
+    setMicState('processing'); // 临时状态，表示正在连接麦克风
     hideVoiceFeedback();
-    startVisualization();
+    // startVisualization() 现在由 onStateChange 自动触发
 
     const transcript = await speechManager.startListening();
     isListening = false;
-    stopVisualization();
+    // stopVisualization() 现在由 onStateChange 自动触发
 
     if (transcript) {
       showTranscript(transcript, true);
