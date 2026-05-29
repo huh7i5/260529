@@ -227,12 +227,26 @@ function postProcessTimeCorrection(originalText, chronoResults) {
   const period = match[1];
   const first = chronoResults[0];
 
-  // Only correct if chrono assigned a definite hour
+  let parsedHour;
   if (!first.start.isCertain('hour')) {
-    return { results: chronoResults, correction: undefined };
+    // If chrono didn't assign a definite hour, but we detected a period, assign a default hour for that period
+    switch (period) {
+      case '凌晨': parsedHour = 2; break;
+      case '早上':
+      case '早晨': parsedHour = 8; break;
+      case '上午': parsedHour = 9; break;
+      case '中午': parsedHour = 12; break;
+      case '下午': parsedHour = 15; break;
+      case '傍晚': parsedHour = 18; break;
+      case '晚上': parsedHour = 20; break;
+      default: parsedHour = 9;
+    }
+    first.start.assign('hour', parsedHour);
+    first.start.assign('minute', 0);
+    return { results: chronoResults, correction: `检测到"${period}"，默认设置为 ${parsedHour}:00` };
   }
 
-  const parsedHour = first.start.get('hour');
+  parsedHour = first.start.get('hour');
   const result = correctTime(period, parsedHour);
 
   if (result.corrected) {
@@ -254,10 +268,34 @@ function preprocess(text) {
   // 将常见的中文日期数字转换为阿拉伯数字，提升 chrono 的识别率
   // 例如：“三十一号” -> “31号”，“五月” -> “5月”
   processed = processed.replace(
-    /([零〇一二两三四五六七八九十]+)(号|日|月|年)/g,
+    /([零〇一二两三四五六七八九十百]+)(号|日|月|年)/g,
     (match, numStr, unit) => {
       const num = chineseNumToInt(numStr);
       return Number.isNaN(num) ? match : `${num}${unit}`;
+    }
+  );
+
+  // 处理孤立的“X号”/“X日”，为其补全正确的年月，防止 chrono 解析失败或忽略
+  // 前瞻避免被已有的月/周/礼拜干扰
+  processed = processed.replace(
+    /(月|周|星期|礼拜|个|每)?(\d+)(号|日)/g,
+    (match, prefix, dayStr, unit) => {
+      if (prefix) return match; // 已经有前缀了，保持原样（如“5月31号”、“下周3日”）
+      
+      const day = parseInt(dayStr, 10);
+      const now = new Date();
+      let month = now.getMonth() + 1;
+      let year = now.getFullYear();
+      
+      // 如果日期已经过去，用户通常指的是下个月的这一天
+      if (day < now.getDate()) {
+        month += 1;
+        if (month > 12) {
+          month = 1;
+          year += 1;
+        }
+      }
+      return `${year}年${month}月${day}${unit}`;
     }
   );
 
