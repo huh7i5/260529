@@ -31,7 +31,7 @@ const INTENT_PATTERNS = [
   },
   {
     intent: 'MODIFY',
-    pattern: /修改|更改|调整|改到|改为/,
+    pattern: /修改|更改|调整|改到|改为|改成|换成|推迟|提前|不是.*是/,
   },
   {
     intent: 'ADD',
@@ -683,46 +683,63 @@ export function parseVoiceCommand(text) {
 
     // ── MODIFY ───────────────────────────────
     case 'MODIFY': {
-      // Try to split around "改到 / 改为 / 调整到" to get title + new time
-      const splitMatch = body.match(/(.+?)(?:改到|改为|调整到|调整为|更改为|更改到)(.+)/);
+      // Try to split around verbs to get title + new time
+      const splitMatch = body.match(/(.+?)(?:改到|改为|改成|换成|调整到|调整为|更改为|更改到|推迟到|提前到|不是.*?是)(.+)/);
 
       let title = body;
       let startDate = null;
       let endDate = null;
       let correction;
 
+      // Extract all dates from the full body to capture both the original date and the new time
+      const fullResults = extractDates(body, now);
+      const postProcessed = postProcessTimeCorrection(body, fullResults);
+      const results = postProcessed.results;
+      correction = postProcessed.correction;
+
       if (splitMatch) {
         title = splitMatch[1]
           .replace(/把|将|的时间|的日期/g, '')
           .trim();
-        const timePart = splitMatch[2].trim();
-        const rawResults = extractDates(timePart, now);
-        const postProcessed = postProcessTimeCorrection(timePart, rawResults);
-        const results = postProcessed.results;
-        correction = postProcessed.correction;
+          
         if (results.length > 0) {
-          startDate = results[0].start.date();
-          if (!results[0].start.isCertain('hour')) {
+          // The target time is usually the last date mentioned
+          const targetResult = results[results.length - 1];
+          const firstResult = results[0];
+          
+          // If the target time only has an hour/minute but no explicit month/day, borrow the date from the first result
+          startDate = targetResult.start.date();
+          if (!targetResult.start.isCertain('day') && targetResult.start.isCertain('hour') && firstResult.start.isCertain('day')) {
+             startDate.setFullYear(firstResult.start.get('year'));
+             startDate.setMonth(firstResult.start.get('month') - 1); // chrono months are 1-12
+             startDate.setDate(firstResult.start.get('day'));
+          }
+
+          if (!targetResult.start.isCertain('hour')) {
             startDate.setHours(9, 0, 0, 0);
           }
-          endDate = results[0].end
-            ? results[0].end.date()
+          endDate = targetResult.end
+            ? targetResult.end.date()
             : new Date(startDate.getTime() + 60 * 60 * 1000);
         }
       } else {
-        // Fallback: try to extract dates from the whole body
-        const rawResults = extractDates(body, now);
-        const postProcessed = postProcessTimeCorrection(body, rawResults);
-        const results = postProcessed.results;
-        correction = postProcessed.correction;
         if (results.length > 0) {
           title = extractTitle(body, results) || body;
-          startDate = results[0].start.date();
-          if (!results[0].start.isCertain('hour')) {
+          const targetResult = results[results.length - 1];
+          const firstResult = results[0];
+          
+          startDate = targetResult.start.date();
+          if (!targetResult.start.isCertain('day') && targetResult.start.isCertain('hour') && firstResult.start.isCertain('day')) {
+             startDate.setFullYear(firstResult.start.get('year'));
+             startDate.setMonth(firstResult.start.get('month') - 1);
+             startDate.setDate(firstResult.start.get('day'));
+          }
+
+          if (!targetResult.start.isCertain('hour')) {
             startDate.setHours(9, 0, 0, 0);
           }
-          endDate = results[0].end
-            ? results[0].end.date()
+          endDate = targetResult.end
+            ? targetResult.end.date()
             : new Date(startDate.getTime() + 60 * 60 * 1000);
         }
       }
