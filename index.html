@@ -207,49 +207,6 @@
     </div>
   </div>
 
-  <script>
-    var Module = {
-      locateFile: function(path, scriptDirectory) {
-        return '/js/' + path;
-      },
-      onRuntimeInitialized: function() {
-        console.log("Sherpa-ONNX WASM loaded.");
-        window.__SherpaWasmReady = true;
-        
-        // 恢复 UI 状态
-        const micBtn = document.getElementById('btn-mic');
-        if (micBtn && micBtn.classList.contains('loading')) {
-          micBtn.classList.remove('loading');
-          
-          const loadIcon = document.getElementById('mic-loading-icon');
-          const micIcon = document.getElementById('mic-icon');
-          const hint = document.getElementById('voice-hint');
-          
-          if (loadIcon) loadIcon.classList.add('hidden');
-          if (micIcon) micIcon.classList.remove('hidden');
-          if (hint) hint.textContent = '模型就绪！点击麦克风，说出你的指令';
-        }
-      },
-      setStatus: function(text) {
-        const hint = document.getElementById('voice-hint');
-        const micBtn = document.getElementById('btn-mic');
-        if (!hint || !micBtn || !micBtn.classList.contains('loading')) return;
-        
-        if (text.includes('Downloading data...')) {
-          const match = text.match(/\((\d+)\/(\d+)\)/);
-          if (match) {
-            const loaded = (parseInt(match[1]) / (1024 * 1024)).toFixed(1);
-            const total = (parseInt(match[2]) / (1024 * 1024)).toFixed(1);
-            hint.textContent = `首次加载模型数据... ${loaded}MB / ${total}MB`;
-          }
-        } else if (text) {
-          hint.textContent = text;
-        }
-      }
-    };
-  </script>
-  <script src="/js/sherpa-onnx-asr.js"></script>
-  <script src="/js/sherpa-onnx-wasm-main-asr.js"></script>
   <script type="module" src="/js/main.js"></script>
 </body>
 </html>
