@@ -1,26 +1,32 @@
 import { WebSocketServer } from 'ws';
 import sherpa_onnx from 'sherpa-onnx';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const PORT = 3002;
 
 console.log('Initializing Sherpa-ONNX model...');
 
-const modelConfig = {
-  transducer: {
-    encoder: './public/models/sherpa-onnx-streaming-zipformer-zh-14M-2023-02-23/encoder-epoch-99-avg-1.int8.onnx',
-    decoder: './public/models/sherpa-onnx-streaming-zipformer-zh-14M-2023-02-23/decoder-epoch-99-avg-1.onnx',
-    joiner: './public/models/sherpa-onnx-streaming-zipformer-zh-14M-2023-02-23/joiner-epoch-99-avg-1.int8.onnx',
-  },
-  tokens: './public/models/sherpa-onnx-streaming-zipformer-zh-14M-2023-02-23/tokens.txt',
-  provider: 'cpu',
-  numThreads: 1,
-  modelType: 'zipformer',
-  debug: 0,
-};
+const modelDir = path.join(__dirname, 'models', 'sherpa-onnx-streaming-zipformer-bilingual-zh-en-2023-02-20');
 
 const featConfig = {
   sampleRate: 16000,
   featureDim: 80,
+};
+
+const modelConfig = {
+  transducer: {
+    encoder: path.join(modelDir, 'encoder-epoch-99-avg-1.int8.onnx'),
+    decoder: path.join(modelDir, 'decoder-epoch-99-avg-1.onnx'),
+    joiner: path.join(modelDir, 'joiner-epoch-99-avg-1.int8.onnx'),
+  },
+  tokens: path.join(modelDir, 'tokens.txt'),
+  provider: 'cpu',
+  numThreads: 2,
+  modelType: 'zipformer',
+  debug: 0,
 };
 
 let recognizer;
