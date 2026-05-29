@@ -293,6 +293,13 @@ async function handleMicClick() {
     setMicState('idle');
   } catch (error) {
     isListening = false;
+    
+    // 如果是因为模型尚未加载好
+    if (error.message.includes('正在加载中') || error.message.includes('首次加载')) {
+      setMicState('loading');
+      return; // 保持 loading 状态，让用户知道
+    }
+
     setMicState('idle');
     hideTranscript();
     stopVisualization();
