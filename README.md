@@ -16,7 +16,7 @@
 ## 🏆 七牛云暑期训练营 - 参赛作品说明
 
 **项目名称**：VoiCal - 智能语音日历助手  
-**演示视频链接**：[请在此处替换为 Bilibili 或云盘的视频链接]
+**演示视频链接**：[点击前往 Bilibili 观看演示视频](https://www.bilibili.com/video/BV1FvVh6oEyf/?spm_id_from=333.1387.homepage.video_card.click&vd_source=9262d11078d0991c75856ccb723bbcc4)
 
 ### 📜 依赖与原创说明 (遵循规则要求)
 根据比赛提交规则，本项目的代码构成如下：
@@ -62,11 +62,10 @@
    - **原生 JS (Vanilla JS) + Vite**：极致的首屏加载速度，摒弃了厚重的框架历史包袱。
    - **FullCalendar**：提供强大、可靠的月/周/日视图渲染底座。
    - **Dexie.js**：对原生 IndexedDB 进行优雅封装，提供高性能的本地数据流转。
-2. **音频引擎流转架构**
-   - 为了彻底解决“多模块争抢麦克风导致死锁”的痛点，我们设计了**单向音频数据流**：`SpeechManager` 独占获取 `MediaStream`，然后将纯净流共享给 `Visualizer` 模块进行波形绘制，彻底消除硬件并发冲突。
-   - **前置强制降采样 (Software Downsampling)**：无视操作系统的音频采样率霸权（如锁死的 48000Hz），前端通过自定义算法强制按精确比例将 PCM 音频降采样至 16000Hz 后，再通过 WebSocket 喂给后端 ASR，实现了识别准确率的指数级飞跃。
-3. **后端 ASR 架构**
-   - **Node.js + `ws`** + **Sherpa-ONNX**：通过原生 Node.js 绑定调用底层的 Zipformer/Paraformer 模型，避免了原本将百兆级模型文件放到前端 WASM 加载导致的崩溃与卡顿。
+2. **纯前端语音流转架构 (Web Speech API)**
+   - 为了彻底免除部署后端 ASR 服务的繁琐配置，我们深度挖掘了现代浏览器原生的 **SpeechRecognition API**。
+   - 在此之上封装了具有高度容错性和状态管理机制的 `SpeechManager`，并实现了 **2.5秒自定义静音超时缓冲池**，彻底攻克了原生 VAD（语音活动检测）在中文语境下经常“过度激进提前断流”的顽疾，实现了纯前端架构下的丝滑长语音识别体验。
+   - 独立的**音频波形可视化流**：`Visualizer` 模块独立申请纯净的 MediaStream 用于绘制画布波形，与识别流并行互不干扰。
 
 ---
 
@@ -81,17 +80,17 @@
 npm install
 ```
 
-### 3. 一键启动 (前后端同时启动)
+### 3. 本地启动
 ```bash
 npm run dev
 ```
-> 此时，Vite 前端服务器将运行在 `http://localhost:3000`，后端的 WebSocket 语音识别服务将运行在 `ws://localhost:3002`。
+> 此时，Vite 前端服务器将自动启动，你可以点击终端里输出的 `http://localhost:5173` 或类似链接，在浏览器中立刻体验完整的应用。**无需任何复杂的数据库或后端配置！**
 
 ---
 
 ## 🎬 演示视频
 
-[📢 评委请看这里：点击观看完整的 Demo 视频](https://您的视频链接地址)
+[📢 评委请看这里：点击观看完整的 Demo 视频 (Bilibili)](https://www.bilibili.com/video/BV1FvVh6oEyf/?spm_id_from=333.1387.homepage.video_card.click&vd_source=9262d11078d0991c75856ccb723bbcc4)
 
 *(由于纯本地体验无法在 README 中完全展示语音极速交互的快感，请务必观看上述视频体验真实交互过程)*
 
