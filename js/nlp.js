@@ -275,25 +275,35 @@ function preprocess(text) {
     }
   );
 
-  // 处理孤立的“X号”/“X日”，为其补全正确的年月，防止 chrono 解析失败或忽略
-  // 前瞻避免被已有的月/周/礼拜干扰
+  // 处理孤立的“X号”/“X日”，以及带有“上个月/下个月/本月”前缀的日期
+  // 为其补全正确的年月，防止 chrono 解析失败或忽略
   processed = processed.replace(
-    /(月|周|星期|礼拜|个|每)?(\d+)(号|日)/g,
+    /(上个月|下个月|这个月|上月|下月|本月|月|周|星期|礼拜|个|每)?(\d+)(号|日)/g,
     (match, prefix, dayStr, unit) => {
-      if (prefix) return match; // 已经有前缀了，保持原样（如“5月31号”、“下周3日”）
+      // 如果前缀是周、星期、礼拜等，或者前缀里包含数字（比如“5月”），交给 chrono 处理
+      if (prefix === '周' || prefix === '星期' || prefix === '礼拜' || prefix === '个' || prefix === '每') return match;
+      if (prefix && /^\d+$/.test(prefix.replace('月', ''))) return match;
       
       const day = parseInt(dayStr, 10);
       const now = new Date();
       let month = now.getMonth() + 1;
       let year = now.getFullYear();
       
-      // 如果日期已经过去，用户通常指的是下个月的这一天
-      if (day < now.getDate()) {
+      if (prefix === '下个月' || prefix === '下月') {
         month += 1;
-        if (month > 12) {
-          month = 1;
-          year += 1;
-        }
+      } else if (prefix === '上个月' || prefix === '上月') {
+        month -= 1;
+      } else if (!prefix && day < now.getDate()) {
+        // 如果没有明确前缀，且日期已经过去，用户通常指的是下个月的这一天
+        month += 1;
+      }
+      
+      if (month > 12) {
+        month = 1;
+        year += 1;
+      } else if (month < 1) {
+        month = 12;
+        year -= 1;
       }
       return `${year}年${month}月${day}${unit}`;
     }
@@ -457,6 +467,7 @@ function extractTitle(text, chronoResults) {
   title = title
     .replace(/^(帮我|请|去|给我|我要|我想|帮忙)+/g, '')
     .replace(/(一个|一下|一件|一场|的事|的活动|的日程|的安排)/g, '')
+    .replace(/所有|全部/g, '')
     .replace(/^[的,，、\s]+/, '')
     .replace(/[的,，、\s]+$/, '')
     .replace(/\s{2,}/g, ' ')
