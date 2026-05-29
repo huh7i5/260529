@@ -5,10 +5,12 @@
  */
 
 let analyser = null;
-let sourceRef = null;   // Reference to the shared source node (don't own it)
 let animationId = null;
 let canvas = null;
 let ctx = null;
+
+let mediaStream = null;
+let audioContext = null;
 
 const BAR_COUNT = 48;
 const MIN_BAR_HEIGHT = 2;
@@ -63,7 +65,6 @@ export async function startVisualization() {
 
 /**
  * 停止可视化并释放资源
- * 只断开 analyser — 不关闭 audioContext / 不停 mediaStream（它们属于 speech.js）
  */
 export function stopVisualization() {
   if (animationId) {
@@ -76,7 +77,17 @@ export function stopVisualization() {
     analyser = null;
   }
 
-  sourceRef = null;
+  if (mediaStream) {
+    mediaStream.getTracks().forEach(track => track.stop());
+    mediaStream = null;
+  }
+
+  if (audioContext) {
+    if (audioContext.state !== 'closed') {
+      try { audioContext.close(); } catch (_) {}
+    }
+    audioContext = null;
+  }
 
   // 清空 canvas
   if (canvas && ctx) {
