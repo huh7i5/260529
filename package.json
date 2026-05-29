@@ -4,7 +4,7 @@
   "description": "VoiCal - 语音日历工具，通过中文语音快速管理日程。借助 Antigravity (Google DeepMind) 开发。",
   "type": "module",
   "scripts": {
-    "dev": "concurrently \"vite\" \"node server.js\"",
+    "dev": "vite",
     "build": "vite build",
     "preview": "vite preview"
   },

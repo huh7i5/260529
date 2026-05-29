@@ -251,10 +251,8 @@ function setupSpeechCallbacks() {
   speechManager.onStateChange((state) => {
     setMicState(state === 'speaking' ? 'idle' : state);
     
-    // 监听状态自动启动/停止可视化器，共享音频流避免硬件冲突
     if (state === 'listening') {
-      const stream = speechManager.getStream();
-      if (stream) startVisualization(stream);
+      startVisualization();
     } else {
       stopVisualization();
     }
@@ -293,16 +291,17 @@ async function handleMicClick() {
     isListening = false;
     // stopVisualization() 现在由 onStateChange 自动触发
 
-    if (transcript) {
+    if (transcript && transcript.trim()) {
       showTranscript(transcript, true);
       setMicState('processing');
       await processVoiceCommand(transcript);
+      // Bug 8 fix: set idle AFTER processing completes, not before
+    } else {
+      // Empty transcript (no speech detected)
+      showVoiceFeedback('没有检测到语音，请再试一次', true);
     }
-
-    setMicState('idle');
   } catch (error) {
     isListening = false;
-    setMicState('idle');
     hideTranscript();
     stopVisualization();
 
@@ -311,6 +310,9 @@ async function handleMicClick() {
     } else {
       showVoiceFeedback('没有检测到语音，请再试一次', true);
     }
+  } finally {
+    // Bug 8 fix: always reset to idle at the very end
+    setMicState('idle');
   }
 }
 
