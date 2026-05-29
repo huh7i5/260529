@@ -91,17 +91,21 @@ export function getCalendar() {
 export function addCalendarEvent(event) {
   if (!calendarInstance) return;
 
+  const isCompleted = !!event.completed;
+
   calendarInstance.addEvent({
     id: String(event.id),
     title: event.title,
     start: event.start,
     end: event.end,
     allDay: event.allDay || false,
-    backgroundColor: event.color || '#e8684a',
-    borderColor: event.color || '#e8684a',
+    backgroundColor: isCompleted ? '#999' : (event.color || '#e8684a'),
+    borderColor: isCompleted ? '#999' : (event.color || '#e8684a'),
+    classNames: isCompleted ? ['event-completed'] : [],
     extendedProps: {
       reminder: event.reminder || 0,
-      dbId: event.id
+      dbId: event.id,
+      completed: isCompleted
     }
   });
 }

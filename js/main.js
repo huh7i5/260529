@@ -6,7 +6,7 @@
  */
 
 import { initCalendar, addCalendarEvent, removeCalendarEvent, loadEvents, changeView, goToToday, goPrev, goNext, getTitle } from './calendar.js';
-import { initDB, addEvent, deleteEvent, deleteEventByTitle, getUpcomingEvents, getAllEvents, getEventsByDateRange, checkConflicts, addRecurringEvents } from './storage.js';
+import { initDB, addEvent, deleteEvent, deleteEventByTitle, getUpcomingEvents, getAllEvents, getEventsByDateRange, checkConflicts, addRecurringEvents, toggleEventComplete } from './storage.js';
 import { parseVoiceCommand } from './nlp.js';
 import speechManager from './speech.js';
 import { initReminder, setGetEventsCallback } from './reminder.js';
@@ -517,8 +517,30 @@ async function handleDeleteEvent(eventId) {
 
 function handleEventClick(fcEvent) {
   const eventId = parseInt(fcEvent.extendedProps?.dbId || fcEvent.id);
-  if (confirm(`要删除「${fcEvent.title}」吗？`)) {
+  const isCompleted = fcEvent.extendedProps?.completed;
+  const title = fcEvent.title;
+
+  // 弹出操作菜单
+  const action = prompt(
+    `「${title}」${isCompleted ? ' (已完成)' : ''}\n\n请输入操作：\n1 = ${isCompleted ? '取消完成' : '标记完成'}\n2 = 删除事件\n\n输入 1 或 2：`
+  );
+
+  if (action === '1') {
+    handleToggleComplete(eventId, title);
+  } else if (action === '2') {
     handleDeleteEvent(eventId);
+  }
+}
+
+async function handleToggleComplete(eventId, title) {
+  try {
+    const newState = await toggleEventComplete(eventId);
+    showToast(newState ? `✅「${title}」已完成` : `🔄「${title}」标记为未完成`, 'success');
+    await refreshCalendarEvents();
+    await refreshUpcomingEvents();
+  } catch (error) {
+    console.error('切换完成状态失败:', error);
+    showToast('操作失败', 'error');
   }
 }
 
@@ -584,13 +606,31 @@ function updateCalendarTitle() {
 function initTheme() {
   const saved = localStorage.getItem('voical-theme');
   const btn = document.getElementById('btn-theme-toggle');
-  if (saved) {
+  const manualSet = localStorage.getItem('voical-theme-manual');
+
+  if (saved && manualSet) {
+    // 用户手动设过，尊重选择
     document.documentElement.setAttribute('data-theme', saved);
     if (btn) btn.textContent = saved === 'dark' ? '☀️' : '🌙';
   } else {
-    // 跟随系统偏好
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    if (btn) btn.textContent = prefersDark ? '☀️' : '🌙';
+    // 自动模式：22:00 - 07:00 为夜间
+    applyAutoTheme();
+    // 每 30 分钟检查一次
+    setInterval(applyAutoTheme, 30 * 60 * 1000);
+  }
+}
+
+function applyAutoTheme() {
+  const hour = new Date().getHours();
+  const isDarkTime = hour >= 22 || hour < 7;
+  const btn = document.getElementById('btn-theme-toggle');
+
+  if (isDarkTime) {
+    document.documentElement.setAttribute('data-theme', 'dark');
+    if (btn) btn.textContent = '☀️';
+  } else {
+    document.documentElement.setAttribute('data-theme', 'light');
+    if (btn) btn.textContent = '🌙';
   }
 }
 
@@ -608,6 +648,7 @@ function toggleTheme() {
     localStorage.setItem('voical-theme', 'dark');
     if (btn) btn.textContent = '☀️';
   }
+  localStorage.setItem('voical-theme-manual', '1');
 }
 
 // ============ 壁纸管理 ============

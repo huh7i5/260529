@@ -15,6 +15,11 @@ db.version(1).stores({
   events: '++id, title, start, end, allDay, reminder, createdAt'
 });
 
+// v2: add completed status field
+db.version(2).stores({
+  events: '++id, title, start, end, allDay, reminder, createdAt, completed'
+});
+
 // ─── Initialise ──────────────────────────────────────────────────────
 
 /**
@@ -201,6 +206,25 @@ export async function updateEvent(id, changes) {
     return updated;
   } catch (err) {
     console.error('[Storage] updateEvent failed:', err);
+    throw err;
+  }
+}
+
+/**
+ * Toggle the completed status of an event.
+ * @param {number} id
+ * @returns {Promise<boolean>} new completed state
+ */
+export async function toggleEventComplete(id) {
+  try {
+    const event = await db.events.get(id);
+    if (!event) return false;
+    const newState = !event.completed;
+    await db.events.update(id, { completed: newState });
+    console.log(`[Storage] Event ${id} completed: ${newState}`);
+    return newState;
+  } catch (err) {
+    console.error('[Storage] toggleEventComplete failed:', err);
     throw err;
   }
 }
