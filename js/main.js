@@ -153,10 +153,15 @@ function bindEventListeners() {
     document.getElementById('compat-warning')?.classList.add('hidden');
   });
 
-  // 事件列表删除按钮（事件委托）
+  // 事件列表操作按钮（事件委托）
   document.getElementById('events-list')?.addEventListener('click', (e) => {
-    const deleteBtn = e.target.closest('.event-delete');
-    if (deleteBtn) {
+    const completeBtn = e.target.closest('.btn-complete');
+    const deleteBtn = e.target.closest('.btn-delete');
+
+    if (completeBtn) {
+      const eventId = parseInt(completeBtn.dataset.eventId);
+      handleToggleComplete(eventId, '');
+    } else if (deleteBtn) {
       const eventId = parseInt(deleteBtn.dataset.eventId);
       handleDeleteEvent(eventId);
     }
