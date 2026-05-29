@@ -164,30 +164,30 @@ export function setMicState(state) {
  * @param {boolean} isFinal - 是否为最终结果
  */
 export function showTranscript(text, isFinal = false) {
-  const transcriptEl = document.getElementById('voice-transcript');
-  const textEl = document.getElementById('transcript-text');
-  const cursorEl = document.getElementById('transcript-cursor');
+  const textEl = document.getElementById('status-feedback-text');
+  const iconEl = document.querySelector('#status-feedback .status-icon');
 
-  if (!transcriptEl || !textEl) return;
+  if (!textEl) return;
 
-  transcriptEl.classList.remove('hidden');
-  textEl.textContent = text;
+  textEl.textContent = isFinal ? `🎯 "${text}"` : `🎙️ ${text}...`;
+  if (iconEl) iconEl.textContent = isFinal ? '🎯' : '🎙️';
 
-  if (isFinal) {
-    cursorEl?.classList.add('hidden');
-  } else {
-    cursorEl?.classList.remove('hidden');
-  }
+  // 高亮状态栏
+  const feedbackEl = document.getElementById('status-feedback');
+  feedbackEl?.classList.add('highlight');
 }
 
 /**
  * 隐藏语音识别文本
  */
 export function hideTranscript() {
-  const transcriptEl = document.getElementById('voice-transcript');
-  if (transcriptEl) {
-    transcriptEl.classList.add('hidden');
-  }
+  const textEl = document.getElementById('status-feedback-text');
+  const iconEl = document.querySelector('#status-feedback .status-icon');
+  const feedbackEl = document.getElementById('status-feedback');
+
+  if (textEl) textEl.textContent = '就绪 — 点击麦克风或按空格键开始语音';
+  if (iconEl) iconEl.textContent = '💬';
+  feedbackEl?.classList.remove('highlight');
 }
 
 /**
