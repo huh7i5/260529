@@ -204,6 +204,19 @@
     </div>
   </div>
 
+  <script>
+    var Module = {
+      locateFile: function(path, scriptDirectory) {
+        return '/js/' + path;
+      },
+      onRuntimeInitialized: function() {
+        console.log("Sherpa-ONNX WASM loaded.");
+        window.__SherpaWasmReady = true;
+      }
+    };
+  </script>
+  <script src="/js/sherpa-onnx-asr.js"></script>
+  <script src="/js/sherpa-onnx-wasm-main-asr.js"></script>
   <script type="module" src="/js/main.js"></script>
 </body>
 </html>
