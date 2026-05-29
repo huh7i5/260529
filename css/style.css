@@ -337,7 +337,7 @@ body {
   flex: 1;
   padding: var(--space-6);
   overflow-y: scroll; /* 始终显示滚动条轨道，防止弹出层导致内容宽度突变 */
-  overflow-x: auto;   /* 允许在极小屏幕下水平滚动，防止最右侧日期被挡住 */
+  overflow-x: hidden; /* 防止网格溢出 */
   min-width: 0;
 }
 
@@ -1038,8 +1038,7 @@ body {
 
 /* ---------- FullCalendar Overrides ---------- */
 #calendar {
-  width: 100%;
-  min-width: 0;
+  max-width: 100%;
 }
 
 .fc {
