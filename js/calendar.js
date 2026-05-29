@@ -72,6 +72,38 @@ export function initCalendar(el, options = {}) {
       }
     },
 
+    // 自定义事件内容：加入删除按钮
+    eventContent: (arg) => {
+      const container = document.createElement('div');
+      container.className = 'fc-event-inner';
+
+      const timeEl = document.createElement('span');
+      timeEl.className = 'fc-event-time-text';
+      timeEl.textContent = arg.timeText;
+
+      const titleEl = document.createElement('span');
+      titleEl.className = 'fc-event-title-text';
+      titleEl.textContent = arg.event.title;
+
+      const deleteBtn = document.createElement('button');
+      deleteBtn.className = 'fc-event-delete';
+      deleteBtn.textContent = '×';
+      deleteBtn.title = '删除';
+      deleteBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (options.onEventDelete) {
+          const eventId = parseInt(arg.event.extendedProps?.dbId || arg.event.id);
+          options.onEventDelete(eventId);
+        }
+      });
+
+      container.appendChild(timeEl);
+      container.appendChild(titleEl);
+      container.appendChild(deleteBtn);
+
+      return { domNodes: [container] };
+    },
+
     ...options
   });
 

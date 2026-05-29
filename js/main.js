@@ -49,6 +49,9 @@ async function init() {
     },
     onEventDrop: (event) => {
       handleEventDrag(event);
+    },
+    onEventDelete: (eventId) => {
+      handleDeleteEvent(eventId);
     }
   });
   console.log('✅ 日历就绪');
