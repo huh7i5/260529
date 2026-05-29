@@ -118,6 +118,14 @@ function bindEventListeners() {
   initTheme();
   document.getElementById('btn-theme-toggle')?.addEventListener('click', toggleTheme);
 
+  // 壁纸设置
+  initWallpaper();
+  document.getElementById('wallpaper-input')?.addEventListener('change', handleWallpaperUpload);
+  document.getElementById('btn-wallpaper-reset')?.addEventListener('click', resetWallpaper);
+  document.querySelectorAll('.wallpaper-preset').forEach(btn => {
+    btn.addEventListener('click', () => applyPresetWallpaper(btn.dataset.preset));
+  });
+
   // 手动添加按钮
   document.getElementById('btn-add-manual')?.addEventListener('click', () => {
     openAddEventModal();
@@ -579,6 +587,87 @@ function toggleTheme() {
   }
 }
 
+// ============ 壁纸管理 ============
+
+const PRESET_GRADIENTS = {
+  'gradient-warm': 'linear-gradient(135deg, #fceabb 0%, #f8b500 100%)',
+  'gradient-cool': 'linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%)',
+  'gradient-sunset': 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+  'gradient-night': 'linear-gradient(135deg, #0c0c1d 0%, #1a1a4e 50%, #2d1b69 100%)',
+};
+
+function initWallpaper() {
+  const saved = localStorage.getItem('voical-wallpaper');
+  const type = localStorage.getItem('voical-wallpaper-type');
+  if (saved && type) {
+    if (type === 'image') {
+      document.body.style.backgroundImage = `url(${saved})`;
+    } else if (type === 'gradient') {
+      document.body.style.backgroundImage = saved;
+    }
+    document.body.classList.add('has-wallpaper');
+    // 高亮活跃的预设
+    if (type === 'gradient') {
+      const presetName = localStorage.getItem('voical-wallpaper-preset');
+      if (presetName) {
+        document.querySelector(`.wallpaper-preset[data-preset="${presetName}"]`)?.classList.add('active');
+      }
+    }
+  }
+}
+
+function handleWallpaperUpload(e) {
+  const file = e.target.files?.[0];
+  if (!file) return;
+
+  // 限制文件大小 5MB
+  if (file.size > 5 * 1024 * 1024) {
+    showToast('图片不能超过 5MB', 'warning');
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    const dataUrl = ev.target.result;
+    document.body.style.backgroundImage = `url(${dataUrl})`;
+    document.body.classList.add('has-wallpaper');
+    localStorage.setItem('voical-wallpaper', dataUrl);
+    localStorage.setItem('voical-wallpaper-type', 'image');
+    localStorage.removeItem('voical-wallpaper-preset');
+    clearPresetActive();
+    showToast('壁纸已更新 🖼️', 'success');
+  };
+  reader.readAsDataURL(file);
+}
+
+function applyPresetWallpaper(presetName) {
+  const gradient = PRESET_GRADIENTS[presetName];
+  if (!gradient) return;
+
+  document.body.style.backgroundImage = gradient;
+  document.body.classList.add('has-wallpaper');
+  localStorage.setItem('voical-wallpaper', gradient);
+  localStorage.setItem('voical-wallpaper-type', 'gradient');
+  localStorage.setItem('voical-wallpaper-preset', presetName);
+  clearPresetActive();
+  document.querySelector(`.wallpaper-preset[data-preset="${presetName}"]`)?.classList.add('active');
+  showToast('背景已更新 ✨', 'success');
+}
+
+function resetWallpaper() {
+  document.body.style.backgroundImage = '';
+  document.body.classList.remove('has-wallpaper');
+  localStorage.removeItem('voical-wallpaper');
+  localStorage.removeItem('voical-wallpaper-type');
+  localStorage.removeItem('voical-wallpaper-preset');
+  clearPresetActive();
+  showToast('已恢复默认背景', 'success');
+}
+
+function clearPresetActive() {
+  document.querySelectorAll('.wallpaper-preset').forEach(b => b.classList.remove('active'));
+}
+
 // ============ 工具函数 ============
 
 function formatTimeSpeak(date) {
@@ -685,7 +774,7 @@ async function morningBriefing() {
     const events = await getEventsByDateRange(today, todayEnd);
 
     if (events.length === 0) {
-      showVoiceFeedback('今天暂无日程安排，祝您有美好的一天！');
+      showToast('🌅 今天暂无日程安排，祝您有美好的一天！', 'success');
       await speechManager.speak('今天没有日程安排，祝您有美好的一天');
     } else {
       const summary = events.map(e => {
@@ -698,7 +787,7 @@ async function morningBriefing() {
       }).join('，');
 
       const greeting = `今天有${events.length}个安排：${summary}`;
-      showVoiceFeedback(greeting);
+      showToast(`📋 ${greeting}`, 'success');
       await speechManager.speak(greeting);
     }
   } catch (error) {

@@ -107,6 +107,24 @@
             <p class="empty-state">暂无日程安排</p>
           </div>
         </div>
+
+        <!-- Wallpaper Settings -->
+        <div id="wallpaper-panel" class="sidebar-card">
+          <h2 class="card-title">🖼️ 背景设置</h2>
+          <div class="wallpaper-controls">
+            <label class="wallpaper-upload-btn" for="wallpaper-input">
+              <span>📁 上传壁纸</span>
+              <input type="file" id="wallpaper-input" accept="image/*" hidden />
+            </label>
+            <button id="btn-wallpaper-reset" class="btn btn-ghost btn-sm">恢复默认</button>
+          </div>
+          <div class="wallpaper-presets">
+            <button class="wallpaper-preset" data-preset="gradient-warm" title="暖色渐变"></button>
+            <button class="wallpaper-preset" data-preset="gradient-cool" title="冷色渐变"></button>
+            <button class="wallpaper-preset" data-preset="gradient-sunset" title="落日渐变"></button>
+            <button class="wallpaper-preset" data-preset="gradient-night" title="夜空渐变"></button>
+          </div>
+        </div>
       </aside>
     </main>
 
