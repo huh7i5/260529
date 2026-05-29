@@ -445,7 +445,7 @@ function getQueryDateRange(text, refDate) {
  * can serve as the event title.
  */
 function extractTitle(text, chronoResults) {
-  let title = text;
+  let title = preprocess(text);
 
   // Remove chrono-matched spans (in reverse order to keep indices valid)
   const sorted = [...chronoResults].sort((a, b) => b.index - a.index);
