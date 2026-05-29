@@ -24,10 +24,12 @@ export function initCalendar(el, options = {}) {
     initialView: 'dayGridMonth',
     headerToolbar: false, // 我们用自定义 header
     height: 'auto',
+    contentHeight: 'auto',
     editable: true,
     selectable: true,
     selectMirror: true,
-    dayMaxEvents: 3,
+    dayMaxEvents: true,  // 根据格子高度自动计算显示数量
+    moreLinkClick: 'popover',
     nowIndicator: true,
     eventTimeFormat: {
       hour: '2-digit',
