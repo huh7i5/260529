@@ -309,8 +309,7 @@ body {
 #calendar-section {
   flex: 1;
   padding: var(--space-6);
-  overflow-y: auto;
-  scrollbar-gutter: stable;
+  overflow-y: scroll; /* 始终显示滚动条轨道，防止弹出层导致内容宽度突变 */
   min-width: 0;
 }
 
