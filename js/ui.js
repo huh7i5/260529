@@ -119,27 +119,38 @@ export function renderUpcomingEvents(events) {
 
 /**
  * 设置麦克风按钮状态
- * @param {'idle' | 'listening' | 'processing'} state
+ * @param {'idle' | 'listening' | 'processing' | 'loading'} state
  */
 export function setMicState(state) {
   const btn = document.getElementById('btn-mic');
   const container = btn?.closest('.mic-container');
   const micIcon = document.getElementById('mic-icon');
   const stopIcon = document.getElementById('mic-stop-icon');
+  const loadingIcon = document.getElementById('mic-loading-icon');
   const hint = document.getElementById('voice-hint');
 
   if (!btn) return;
 
   // 清除所有状态
-  btn.classList.remove('listening', 'processing');
+  btn.classList.remove('listening', 'processing', 'loading');
   container?.classList.remove('listening');
 
   switch (state) {
+    case 'loading':
+      btn.classList.add('loading');
+      micIcon?.classList.add('hidden');
+      stopIcon?.classList.add('hidden');
+      loadingIcon?.classList.remove('hidden');
+      loadingIcon?.classList.add('spin');
+      if (hint) hint.textContent = '首次加载，正在下载模型引擎...';
+      break;
+
     case 'listening':
       btn.classList.add('listening');
       container?.classList.add('listening');
       micIcon?.classList.add('hidden');
       stopIcon?.classList.remove('hidden');
+      loadingIcon?.classList.add('hidden');
       if (hint) hint.textContent = '正在聆听...请说出你的指令';
       break;
 
@@ -147,6 +158,7 @@ export function setMicState(state) {
       btn.classList.add('processing');
       micIcon?.classList.remove('hidden');
       stopIcon?.classList.add('hidden');
+      loadingIcon?.classList.add('hidden');
       if (hint) hint.textContent = '正在处理...';
       break;
 
@@ -154,6 +166,7 @@ export function setMicState(state) {
     default:
       micIcon?.classList.remove('hidden');
       stopIcon?.classList.add('hidden');
+      loadingIcon?.classList.add('hidden');
       if (hint) hint.textContent = '点击麦克风，说出你的指令';
       break;
   }
