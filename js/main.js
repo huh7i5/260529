@@ -153,17 +153,19 @@ function bindEventListeners() {
     document.getElementById('compat-warning')?.classList.add('hidden');
   });
 
-  // 事件列表操作按钮（事件委托）
+  // 事件列表：点击条目=切换完成，×=删除
   document.getElementById('events-list')?.addEventListener('click', (e) => {
-    const completeBtn = e.target.closest('.btn-complete');
-    const deleteBtn = e.target.closest('.btn-delete');
-
-    if (completeBtn) {
-      const eventId = parseInt(completeBtn.dataset.eventId);
-      handleToggleComplete(eventId, '');
-    } else if (deleteBtn) {
+    const deleteBtn = e.target.closest('[data-action="delete"]');
+    if (deleteBtn) {
       const eventId = parseInt(deleteBtn.dataset.eventId);
       handleDeleteEvent(eventId);
+      return;
+    }
+
+    const item = e.target.closest('[data-action="toggle"]');
+    if (item) {
+      const eventId = parseInt(item.dataset.eventId);
+      handleToggleComplete(eventId, '');
     }
   });
 
@@ -530,20 +532,9 @@ async function handleDeleteEvent(eventId) {
 
 function handleEventClick(fcEvent) {
   const eventId = parseInt(fcEvent.extendedProps?.dbId || fcEvent.id);
-  const isCompleted = fcEvent.extendedProps?.completed;
   const title = fcEvent.title;
-
-  const action = prompt(
-    `「${title}」${isCompleted ? ' (已完成)' : ''}\n\n请输入操作：\n1 = ${isCompleted ? '取消完成' : '标记完成'}\n2 = 删除此事件\n3 = 删除所有「${title}」\n\n输入 1、2 或 3：`
-  );
-
-  if (action === '1') {
-    handleToggleComplete(eventId, title);
-  } else if (action === '2') {
-    handleDeleteEvent(eventId);
-  } else if (action === '3') {
-    handleBatchDelete(title);
-  }
+  // 点击日历事件 = 直接切换完成状态
+  handleToggleComplete(eventId, title);
 }
 
 async function handleBatchDelete(title) {

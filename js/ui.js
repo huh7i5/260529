@@ -103,16 +103,13 @@ export function renderUpcomingEvents(events) {
     const done = !!event.completed;
 
     return `
-      <div class="event-item" data-event-id="${event.id}">
+      <div class="event-item${done ? ' done' : ''}" data-event-id="${event.id}" data-action="toggle">
         <div class="event-color-dot${done ? ' completed' : ''}"></div>
         <div class="event-info">
           <div class="event-title${done ? ' completed' : ''}">${escapeHtml(event.title)}</div>
           <div class="event-time">${dateStr} ${timeStr}</div>
         </div>
-        <div class="event-actions">
-          <button class="event-action-btn btn-complete" data-event-id="${event.id}" title="${done ? '取消完成' : '完成'}">${done ? '↩' : '✓'}</button>
-          <button class="event-action-btn btn-delete" data-event-id="${event.id}" title="删除">×</button>
-        </div>
+        <button class="event-delete-btn" data-event-id="${event.id}" data-action="delete" title="删除">×</button>
       </div>
     `;
   }).join('');
