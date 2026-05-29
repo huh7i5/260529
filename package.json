@@ -30,7 +30,8 @@
     "@fullcalendar/interaction": "^6.1.20",
     "@fullcalendar/timegrid": "^6.1.20",
     "chrono-node": "^2.7.7",
-    "dexie": "^4.0.11"
+    "dexie": "^4.0.11",
+    "sherpa-onnx": "^1.13.2"
   },
   "devDependencies": {
     "vite": "^6.3.5"
