@@ -29,11 +29,30 @@ const modelConfig = {
   debug: 0,
 };
 
+const endpointConfig = {
+  rule1: {
+    minTrailingSilence: 2.4,
+    mustContainNonSilence: false,
+    minUtteranceLength: 0,
+  },
+  rule2: {
+    minTrailingSilence: 1.2,
+    mustContainNonSilence: true,
+    minUtteranceLength: 0,
+  },
+  rule3: {
+    minTrailingSilence: 0,
+    mustContainNonSilence: false,
+    minUtteranceLength: 20,
+  },
+};
+
 let recognizer;
 try {
   recognizer = sherpa_onnx.createOnlineRecognizer({
     featConfig: featConfig,
     modelConfig: modelConfig,
+    endpointConfig: endpointConfig,
   });
   console.log('Sherpa-ONNX engine initialized successfully!');
 } catch (error) {
