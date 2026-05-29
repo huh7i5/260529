@@ -15,6 +15,11 @@ db.version(1).stores({
   events: '++id, title, start, end, allDay, reminder, createdAt'
 });
 
+// v2: add completed status field
+db.version(2).stores({
+  events: '++id, title, start, end, allDay, reminder, createdAt, completed'
+});
+
 // ─── Initialise ──────────────────────────────────────────────────────
 
 /**
@@ -205,6 +210,25 @@ export async function updateEvent(id, changes) {
   }
 }
 
+/**
+ * Toggle the completed status of an event.
+ * @param {number} id
+ * @returns {Promise<boolean>} new completed state
+ */
+export async function toggleEventComplete(id) {
+  try {
+    const event = await db.events.get(id);
+    if (!event) return false;
+    const newState = !event.completed;
+    await db.events.update(id, { completed: newState });
+    console.log(`[Storage] Event ${id} completed: ${newState}`);
+    return newState;
+  } catch (err) {
+    console.error('[Storage] toggleEventComplete failed:', err);
+    throw err;
+  }
+}
+
 // ─── Helpers ─────────────────────────────────────────────────────────
 
 /**
@@ -243,6 +267,40 @@ export async function checkConflicts(start, end) {
   } catch (err) {
     console.error('[Storage] checkConflicts failed:', err);
     return [];
+  }
+}
+
+/**
+ * Check if an exact duplicate event already exists (same title + same start within 1 min).
+ */
+export async function isDuplicateEvent(title, start) {
+  try {
+    const targetStart = new Date(_toISO(start)).getTime();
+    const allEvents = await db.events.toArray();
+    return allEvents.some(event => {
+      const eStart = new Date(event.start).getTime();
+      return event.title === title && Math.abs(eStart - targetStart) < 60000;
+    });
+  } catch (err) {
+    return false;
+  }
+}
+
+/**
+ * Delete all events with exact title match.
+ * Useful for batch cleanup of duplicates.
+ * @returns {number} count of deleted events
+ */
+export async function batchDeleteByTitle(title) {
+  try {
+    const events = await db.events.where('title').equals(title).toArray();
+    const ids = events.map(e => e.id);
+    await db.events.bulkDelete(ids);
+    console.log(`[Storage] Batch deleted ${ids.length} events with title "${title}"`);
+    return ids.length;
+  } catch (err) {
+    console.error('[Storage] batchDeleteByTitle failed:', err);
+    return 0;
   }
 }
 
