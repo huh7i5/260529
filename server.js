@@ -1,7 +1,7 @@
 import { WebSocketServer } from 'ws';
 import sherpa_onnx from 'sherpa-onnx';
 
-const PORT = 3001;
+const PORT = 3002;
 
 console.log('Initializing Sherpa-ONNX model...');
 

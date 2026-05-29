@@ -50,7 +50,7 @@ class SpeechManager {
         this.isListening = true;
         this.setState('listening');
 
-        ws = new WebSocket('ws://localhost:3001');
+        ws = new WebSocket('ws://localhost:3002');
         
         ws.onopen = async () => {
           const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
