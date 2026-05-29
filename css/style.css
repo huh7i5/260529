@@ -310,6 +310,7 @@ body {
   flex: 1;
   padding: var(--space-6);
   overflow-y: auto;
+  scrollbar-gutter: stable;
   min-width: 0;
 }
 
