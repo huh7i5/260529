@@ -32,6 +32,8 @@ export class SpeechManager {
 
   /** @type {SpeechSynthesisVoice | null} */
   #zhVoice = null;
+  #silenceTimer = null;
+  #fullTranscript = '';
 
   /** @type {boolean} */
   #supported = false;
@@ -62,7 +64,7 @@ export class SpeechManager {
     // --- Recognition setup ---
     const recognition = new SpeechRecognition();
     recognition.lang           = 'zh-CN';
-    recognition.continuous     = false;   // one-shot per click
+    recognition.continuous     = true;    // Use continuous to prevent aggressive browser VAD
     recognition.interimResults = true;    // stream partial text
     recognition.maxAlternatives = 1;
 
@@ -111,7 +113,9 @@ export class SpeechManager {
       this.#rejectListening  = reject;
 
       try {
+        this.#fullTranscript = '';
         this.#setState('listening');
+        this.#resetSilenceTimer();
         this.#recognition.start();
       } catch (err) {
         // e.g. "already started"
@@ -123,6 +127,7 @@ export class SpeechManager {
 
   /** Programmatically stop the current recognition session. */
   stopListening() {
+    this.#clearSilenceTimer();
     if (this.#recognition) {
       try {
         this.#recognition.stop();
@@ -218,6 +223,8 @@ export class SpeechManager {
    * @param {SpeechRecognitionEvent} event
    */
   #handleResult(event) {
+    this.#resetSilenceTimer();
+
     let interimTranscript = '';
     let finalTranscript   = '';
 
@@ -232,22 +239,23 @@ export class SpeechManager {
       }
     }
 
-    // Stream interim text to the callback
-    if (interimTranscript && this.#interimCallback) {
-      this.#interimCallback(interimTranscript);
+    // Accumulate the final transcript so far
+    // Wait, event.results contains ALL results so far in continuous mode.
+    // So we can just rebuild the full transcript from event.results.
+    let fullFinal = '';
+    let fullInterim = '';
+    for (let i = 0; i < event.results.length; i++) {
+       if (event.results[i].isFinal) {
+         fullFinal += event.results[i][0].transcript;
+       } else {
+         fullInterim += event.results[i][0].transcript;
+       }
     }
+    
+    this.#fullTranscript = fullFinal + fullInterim;
 
-    // If we have a final result, resolve the promise
-    if (finalTranscript) {
-      this.#setState('processing');
-      if (this.#interimCallback) {
-        this.#interimCallback(finalTranscript);
-      }
-      if (this.#resolveListening) {
-        this.#resolveListening(finalTranscript);
-        this.#resolveListening = null;
-        this.#rejectListening  = null;
-      }
+    if (this.#interimCallback) {
+      this.#interimCallback(this.#fullTranscript);
     }
   }
 
@@ -272,17 +280,37 @@ export class SpeechManager {
 
   /** Called when recognition ends (may or may not have produced a result). */
   #handleEnd() {
-    // If the promise was never resolved (e.g. user stayed silent),
-    // transition back to idle cleanly.
-    if (this.#state === 'listening') {
-      this.#setState('idle');
-    }
+    this.#clearSilenceTimer();
 
-    // If still pending (no final result and no error), reject gracefully.
-    if (this.#rejectListening) {
-      this.#rejectListening(new Error(friendlyError('no-speech')));
+    if (this.#fullTranscript && this.#fullTranscript.trim() && this.#resolveListening) {
+      this.#setState('processing');
+      this.#resolveListening(this.#fullTranscript.trim());
       this.#resolveListening = null;
       this.#rejectListening  = null;
+    } else {
+      if (this.#state === 'listening') {
+        this.#setState('idle');
+      }
+      if (this.#rejectListening) {
+        this.#rejectListening(new Error(friendlyError('no-speech')));
+        this.#resolveListening = null;
+        this.#rejectListening  = null;
+      }
+    }
+  }
+
+  #resetSilenceTimer() {
+    this.#clearSilenceTimer();
+    // 2.5 seconds of silence before we auto-stop
+    this.#silenceTimer = setTimeout(() => {
+      this.stopListening();
+    }, 2500);
+  }
+
+  #clearSilenceTimer() {
+    if (this.#silenceTimer) {
+      clearTimeout(this.#silenceTimer);
+      this.#silenceTimer = null;
     }
   }
 
