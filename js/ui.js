@@ -196,36 +196,40 @@ export function hideTranscript() {
  * @param {boolean} isError - 是否为错误
  */
 export function showVoiceFeedback(message, isError = false) {
-  const feedbackEl = document.getElementById('voice-feedback');
-  const textEl = document.getElementById('feedback-text');
-  const iconEl = feedbackEl?.querySelector('.feedback-icon');
+  const feedbackEl = document.getElementById('status-feedback');
+  const textEl = document.getElementById('status-feedback-text');
+  const iconEl = feedbackEl?.querySelector('.status-icon');
 
-  if (!feedbackEl || !textEl) return;
-
-  feedbackEl.classList.remove('hidden', 'error');
-  if (isError) {
-    feedbackEl.classList.add('error');
-    if (iconEl) iconEl.textContent = '✕';
-  } else {
-    if (iconEl) iconEl.textContent = '✓';
-  }
+  if (!textEl) return;
 
   textEl.textContent = message;
+  if (iconEl) iconEl.textContent = isError ? '❌' : '✅';
 
-  // 3秒后自动隐藏
+  // 高亮动画
+  feedbackEl?.classList.add('highlight');
   setTimeout(() => {
-    feedbackEl.classList.add('hidden');
-  }, 4000);
+    feedbackEl?.classList.remove('highlight');
+  }, 3000);
 }
 
 /**
  * 隐藏语音反馈
  */
 export function hideVoiceFeedback() {
-  const feedbackEl = document.getElementById('voice-feedback');
-  if (feedbackEl) {
-    feedbackEl.classList.add('hidden');
-  }
+  const textEl = document.getElementById('status-feedback-text');
+  const iconEl = document.querySelector('#status-feedback .status-icon');
+  if (textEl) textEl.textContent = '就绪 — 点击麦克风或按空格键开始语音';
+  if (iconEl) iconEl.textContent = '💬';
+}
+
+/**
+ * 更新状态栏统计数字
+ */
+export function updateStatusStats(todayCount, weekCount) {
+  const todayEl = document.getElementById('status-today-count');
+  const weekEl = document.getElementById('status-week-count');
+  if (todayEl) todayEl.textContent = todayCount;
+  if (weekEl) weekEl.textContent = weekCount;
 }
 
 // ============ 浏览器兼容性检测 ============

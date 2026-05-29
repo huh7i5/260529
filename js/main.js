@@ -22,7 +22,8 @@ import {
   hideTranscript,
   showVoiceFeedback,
   hideVoiceFeedback,
-  checkCompatibility
+  checkCompatibility,
+  updateStatusStats
 } from './ui.js';
 
 // ============ 应用初始化 ============
@@ -545,6 +546,28 @@ async function refreshCalendarEvents() {
 async function refreshUpcomingEvents() {
   const events = await getUpcomingEvents(10);
   renderUpcomingEvents(events);
+  refreshStatusStats();
+}
+
+async function refreshStatusStats() {
+  try {
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const todayEnd = new Date(todayStart);
+    todayEnd.setHours(23, 59, 59, 999);
+
+    const weekStart = new Date(todayStart);
+    weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1);
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekEnd.getDate() + 6);
+    weekEnd.setHours(23, 59, 59, 999);
+
+    const todayEvents = await getEventsByDateRange(todayStart, todayEnd);
+    const weekEvents = await getEventsByDateRange(weekStart, weekEnd);
+    updateStatusStats(todayEvents.length, weekEvents.length);
+  } catch (e) {
+    console.error('stats refresh error:', e);
+  }
 }
 
 // ============ 日历标题更新 ============
