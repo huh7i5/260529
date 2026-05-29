@@ -941,6 +941,112 @@ body {
   min-width: auto;
 }
 
+/* ---------- Wallpaper ---------- */
+.wallpaper-controls {
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.wallpaper-upload-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-bg);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  flex: 1;
+  justify-content: center;
+}
+
+.wallpaper-upload-btn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+.wallpaper-presets {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.wallpaper-preset {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  border: 2px solid var(--color-border-light);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.wallpaper-preset:hover {
+  transform: scale(1.1);
+  border-color: var(--color-primary);
+}
+
+.wallpaper-preset.active {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px var(--color-primary-light);
+}
+
+.wallpaper-preset[data-preset="gradient-warm"] {
+  background: linear-gradient(135deg, #fceabb 0%, #f8b500 100%);
+}
+.wallpaper-preset[data-preset="gradient-cool"] {
+  background: linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%);
+}
+.wallpaper-preset[data-preset="gradient-sunset"] {
+  background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+}
+.wallpaper-preset[data-preset="gradient-night"] {
+  background: linear-gradient(135deg, #0c0c1d 0%, #1a1a4e 50%, #2d1b69 100%);
+}
+
+/* Calendar overlay for wallpaper readability */
+body.has-wallpaper #calendar-section {
+  background: rgba(255, 255, 255, 0.82);
+  border-radius: var(--radius-lg);
+  margin: var(--space-4);
+  backdrop-filter: blur(8px);
+}
+
+[data-theme="dark"] body.has-wallpaper #calendar-section,
+body.has-wallpaper[data-theme="dark"] #calendar-section {
+  background: rgba(28, 27, 26, 0.82);
+}
+
+body.has-wallpaper {
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+}
+
+body.has-wallpaper #app-header {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+}
+
+[data-theme="dark"] body.has-wallpaper #app-header,
+body.has-wallpaper[data-theme="dark"] #app-header {
+  background: rgba(37, 36, 35, 0.85);
+}
+
+body.has-wallpaper #sidebar {
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(12px);
+}
+
+[data-theme="dark"] body.has-wallpaper #sidebar,
+body.has-wallpaper[data-theme="dark"] #sidebar {
+  background: rgba(37, 36, 35, 0.88);
+}
+
 /* ---------- Utility ---------- */
 .hidden {
   display: none !important;
