@@ -27,7 +27,7 @@ const INTENT_PATTERNS = [
   },
   {
     intent: 'DELETE',
-    pattern: /删除|取消|移除|去掉/,
+    pattern: /删除|取消|移除|去掉|删掉/,
   },
   {
     intent: 'MODIFY',
@@ -35,7 +35,7 @@ const INTENT_PATTERNS = [
   },
   {
     intent: 'ADD',
-    pattern: /添加|新建|新增|创建|安排一|设置|帮我加|记一下|加一个|帮我安排/,
+    pattern: /添加|天家|田家|天加|填加|新建|新增|创建|安排一|设置|帮我加|记一下|加一个|帮我安排|预约|提醒我|帮我记|帮我订|帮我约|记个|加个|约个|订个/,
   },
 ];
 
@@ -409,8 +409,10 @@ function extractTitle(text, chronoResults) {
     title = title.slice(0, r.index) + title.slice(r.index + r.text.length);
   }
 
-  // Remove common filler / connector words that often linger
+  // Bug 5 fix: Remove common filler / connector / oral fragments
   title = title
+    .replace(/^(帮我|请|去|给我|我要|我想|帮忙)+/g, '')
+    .replace(/(一个|一下|一件|一场|的事|的活动|的日程|的安排)/g, '')
     .replace(/^[的,，、\s]+/, '')
     .replace(/[的,，、\s]+$/, '')
     .replace(/\s{2,}/g, ' ')
@@ -686,24 +688,30 @@ export function parseVoiceCommand(text) {
 
     // ── UNKNOWN → heuristic: maybe an implicit ADD? ─
     default: {
-      // If the text contains a recognisable date and some leftover text,
-      // treat it as an ADD command.
+      // Bug 4 fix: If the text contains a recognisable date, treat it as
+      // an implicit ADD command even if the extracted title is empty.
       const rawResults = extractDates(trimmed, now);
       const { results, correction } = postProcessTimeCorrection(trimmed, rawResults);
       if (results.length > 0) {
-        const title = extractTitle(trimmed, results) || trimmed;
-        // Only promote to ADD if there's actually a title left
-        if (title.length > 0) {
-          let startDate = results[0].start.date();
-          if (!results[0].start.isCertain('hour')) {
-            startDate.setHours(9, 0, 0, 0);
-          }
-          const endDate = results[0].end
-            ? results[0].end.date()
-            : new Date(startDate.getTime() + 60 * 60 * 1000);
-
-          return { intent: 'ADD', title, startDate, endDate, originalText, correction };
+        let title = extractTitle(trimmed, results);
+        // If title is empty after stripping date text, fall back to
+        // the original text minus the date portion, or '新事件'
+        if (!title || title.length === 0) {
+          title = trimmed
+            .replace(/^(帮我|请|去|给我|我要|我想|帮忙)+/g, '')
+            .replace(/(一个|一下|一件|一场|的事|的活动|的日程|的安排)/g, '')
+            .trim() || '新事件';
         }
+
+        let startDate = results[0].start.date();
+        if (!results[0].start.isCertain('hour')) {
+          startDate.setHours(9, 0, 0, 0);
+        }
+        const endDate = results[0].end
+          ? results[0].end.date()
+          : new Date(startDate.getTime() + 60 * 60 * 1000);
+
+        return { intent: 'ADD', title, startDate, endDate, originalText, correction };
       }
 
       return { intent: 'UNKNOWN', title: trimmed, startDate: null, endDate: null, originalText, correction: undefined };
