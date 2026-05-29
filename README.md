@@ -1,5 +1,4 @@
 <div align="center">
-  <img src="./public/icons/icon.svg" alt="VoiCal Logo" width="120" />
   <h1>VoiCal - 智能语音日历助手</h1>
   <p>🎙️ <b>告别繁琐的手动输入，一句话搞定你的日程管理</b> 📅</p>
 
