@@ -6,7 +6,7 @@
  */
 
 import { initCalendar, addCalendarEvent, removeCalendarEvent, loadEvents, changeView, goToToday, goPrev, goNext, getTitle } from './calendar.js';
-import { initDB, addEvent, deleteEvent, deleteEventByTitle, getUpcomingEvents, getAllEvents, getEventsByDateRange, checkConflicts, addRecurringEvents, toggleEventComplete } from './storage.js';
+import { initDB, addEvent, deleteEvent, deleteEventByTitle, getUpcomingEvents, getAllEvents, getEventsByDateRange, checkConflicts, addRecurringEvents, toggleEventComplete, isDuplicateEvent, batchDeleteByTitle } from './storage.js';
 import { parseVoiceCommand } from './nlp.js';
 import speechManager from './speech.js';
 import { initReminder, setGetEventsCallback } from './reminder.js';
@@ -349,6 +349,14 @@ async function handleAddByVoice(command) {
   const end = command.endDate || new Date(start.getTime() + 60 * 60 * 1000);
 
   try {
+    // 重复检测：同标题 + 同时间不允许
+    const duplicate = await isDuplicateEvent(title, start);
+    if (duplicate) {
+      showVoiceFeedback(`「${title}」已存在，不重复添加`, true);
+      await speechManager.speak(`${title}已经存在了，不需要重复添加`);
+      return;
+    }
+
     // 冲突检测
     const conflicts = await checkConflicts(start, end);
     if (conflicts.length > 0) {
@@ -520,16 +528,24 @@ function handleEventClick(fcEvent) {
   const isCompleted = fcEvent.extendedProps?.completed;
   const title = fcEvent.title;
 
-  // 弹出操作菜单
   const action = prompt(
-    `「${title}」${isCompleted ? ' (已完成)' : ''}\n\n请输入操作：\n1 = ${isCompleted ? '取消完成' : '标记完成'}\n2 = 删除事件\n\n输入 1 或 2：`
+    `「${title}」${isCompleted ? ' (已完成)' : ''}\n\n请输入操作：\n1 = ${isCompleted ? '取消完成' : '标记完成'}\n2 = 删除此事件\n3 = 删除所有「${title}」\n\n输入 1、2 或 3：`
   );
 
   if (action === '1') {
     handleToggleComplete(eventId, title);
   } else if (action === '2') {
     handleDeleteEvent(eventId);
+  } else if (action === '3') {
+    handleBatchDelete(title);
   }
+}
+
+async function handleBatchDelete(title) {
+  const count = await batchDeleteByTitle(title);
+  showToast(`已删除 ${count} 个「${title}」`, 'success');
+  await refreshCalendarEvents();
+  await refreshUpcomingEvents();
 }
 
 async function handleToggleComplete(eventId, title) {
