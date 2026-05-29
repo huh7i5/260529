@@ -85,6 +85,11 @@ class SpeechManager {
           } else if (data.type === 'final') {
             this.finalText += data.text;
             if (this.interimCallback) this.interimCallback(this.finalText);
+            
+            // 当检测到停顿（后端发出 final 信号），自动停止并提交
+            if (this.finalText.trim().length > 0) {
+              this.stopListening();
+            }
           }
         };
 
