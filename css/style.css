@@ -412,10 +412,12 @@ body {
   padding: var(--space-5);
   display: flex;
   flex-direction: column;
-  gap: var(--space-5);
-  overflow-y: auto;
+  gap: var(--space-4);
+  overflow-y: hidden;
   flex-shrink: 0;
   height: calc(100vh - var(--header-height));
+  display: flex;
+  flex-direction: column;
 }
 
 .sidebar-card {
@@ -647,21 +649,37 @@ body {
 }
 
 /* ---------- Events List ---------- */
+#events-panel {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+#events-panel .card-title {
+  flex-shrink: 0;
+}
+
 .events-list {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+  overflow-y: auto;
+  flex: 1;
+  padding-right: var(--space-1);
 }
 
 .event-item {
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  padding: var(--space-3) var(--space-4);
+  padding: var(--space-2) var(--space-3);
   background: var(--color-bg);
   border-radius: var(--radius-md);
   transition: all var(--transition-fast);
   cursor: default;
+  flex-shrink: 0;
 }
 
 .event-item:hover {
@@ -674,6 +692,10 @@ body {
   border-radius: var(--radius-full);
   background: var(--color-primary);
   flex-shrink: 0;
+}
+
+.event-color-dot.completed {
+  background: var(--color-text-tertiary);
 }
 
 .event-info {
@@ -690,38 +712,62 @@ body {
   text-overflow: ellipsis;
 }
 
+.event-title.completed {
+  text-decoration: line-through;
+  color: var(--color-text-tertiary);
+}
+
 .event-time {
   font-size: var(--text-xs);
   color: var(--color-text-tertiary);
 }
 
-.event-delete {
+/* Event inline action buttons */
+.event-actions {
+  display: flex;
+  gap: 2px;
   opacity: 0;
-  background: none;
-  border: none;
-  color: var(--color-text-tertiary);
-  cursor: pointer;
-  padding: var(--space-1);
-  border-radius: var(--radius-sm);
-  transition: all var(--transition-fast);
-  font-size: var(--text-lg);
-  line-height: 1;
+  transition: opacity var(--transition-fast);
+  flex-shrink: 0;
 }
 
-.event-item:hover .event-delete {
+.event-item:hover .event-actions {
   opacity: 1;
 }
 
-.event-delete:hover {
+.event-action-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 3px 6px;
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  line-height: 1;
+  transition: all var(--transition-fast);
+  color: var(--color-text-tertiary);
+}
+
+.event-action-btn.btn-complete:hover {
+  color: var(--color-success);
+  background: var(--color-success-light);
+}
+
+.event-action-btn.btn-delete:hover {
   color: var(--color-danger);
   background: var(--color-danger-light);
+}
+
+/* Wallpaper panel pinned bottom */
+#wallpaper-panel {
+  flex-shrink: 0;
+  margin-top: auto;
 }
 
 .empty-state {
   text-align: center;
   color: var(--color-text-tertiary);
   font-size: var(--text-sm);
-  padding: var(--space-8) 0;
+  padding: var(--space-4) 0;
 }
 
 /* ---------- Buttons ---------- */
